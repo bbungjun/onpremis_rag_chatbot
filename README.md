@@ -1,5 +1,15 @@
 # llmenhance
 
+## Live QA Demo
+
+Qwen live QA:
+
+![Qwen Live QA](docs/assets/qwen_ver.gif)
+
+EXAONE live QA:
+
+![EXAONE Live QA](docs/assets/exaone_ver.gif)
+
 `llmenhance`는 사내 규정과 회사 문서를 기반으로 직원 질문에 답하는 RAG 챗봇 MVP입니다.
 
 목표는 일반적인 RAG 데모가 아니라, 직원이 실제로 묻는 회사 정책 질문에 대해 검색된 내부 문서 chunk만 근거로 답하고, 모든 답변에 source를 남기는 것입니다.
@@ -48,10 +58,12 @@ The shared profile creates `.env` from `.env.shared-ec2.example` and uses:
 
 ```env
 TEAM_ENV_PROFILE=shared-ec2
-OLLAMA_BASE_URL=http://16.208.81.115:11434
+OLLAMA_BASE_URL=http://YOUR_EC2_PUBLIC_IP:11434
 LLM_MODEL=qwen3:4b-instruct
 EMBEDDING_MODEL=bge-m3
 ```
+
+Before running `shared-ec2`, replace `YOUR_EC2_PUBLIC_IP` with the EC2 host that serves Ollama on port `11434`.
 
 Use the local Ollama fallback only when the shared EC2 endpoint is unavailable or when explicitly asked:
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib
+import logging
 import time
 
 import pytest
@@ -22,7 +23,53 @@ def test_streamlit_app_exposes_supported_ollama_model_options():
     }
 
 
-def test_ask_both_models_sends_selected_ollama_model_only_to_qwen(monkeypatch):
+def test_active_model_keys_use_single_ollama_session_key():
+    streamlit_app = streamlit_app_module()
+
+    assert streamlit_app._active_model_keys(
+        {"gemini": {"enabled": False}, "bedrock": {"enabled": False}}
+    ) == ["ollama"]
+
+
+def test_model_requests_use_single_ollama_provider_for_selected_model_only():
+    streamlit_app = streamlit_app_module()
+
+    requests = streamlit_app._model_requests(
+        {"question": "leave policy"},
+        selected_ollama_model="exaone3.5:7.8b",
+        gemini_config={"enabled": False},
+        bedrock_config={"enabled": False},
+    )
+
+    assert requests == [
+        (
+            "ollama",
+            streamlit_app.OLLAMA_ENDPOINT,
+            {"question": "leave policy", "llm_model": "exaone3.5:7.8b"},
+        )
+    ]
+
+
+def test_ollama_messages_key_separates_supported_local_models():
+    streamlit_app = streamlit_app_module()
+
+    assert streamlit_app._ollama_messages_key("qwen3:4b-instruct") == "ollama_qwen_messages"
+    assert streamlit_app._ollama_messages_key("exaone3.5:7.8b") == "ollama_exaone_messages"
+
+
+def test_active_message_keys_route_ollama_to_selected_model_history():
+    streamlit_app = streamlit_app_module()
+
+    assert streamlit_app._active_message_keys(
+        {"gemini": {"enabled": False}, "bedrock": {"enabled": True}},
+        selected_ollama_model="exaone3.5:7.8b",
+    ) == {
+        "ollama": "ollama_exaone_messages",
+        "bedrock": "bedrock_messages",
+    }
+
+
+def test_ask_both_models_sends_selected_ollama_model_only_to_ollama_endpoint(monkeypatch):
     streamlit_app = streamlit_app_module()
     calls = []
 
@@ -125,9 +172,9 @@ def test_iter_model_results_yields_fastest_model_first(monkeypatch):
     streamlit_app = streamlit_app_module()
 
     def fake_call_rag(url, payload):
-        if url == streamlit_app.QWEN_ENDPOINT:
+        if url == streamlit_app.OLLAMA_ENDPOINT:
             time.sleep(0.05)
-            return {"answer": "qwen", "sources": [], "elapsed_ms": 50}
+            return {"answer": "ollama", "sources": [], "elapsed_ms": 50}
         return {"answer": "gemini", "sources": [], "elapsed_ms": 1}
 
     monkeypatch.setattr(streamlit_app, "_call_rag", fake_call_rag)
@@ -139,5 +186,29 @@ def test_iter_model_results_yields_fastest_model_first(monkeypatch):
         )
     )
 
-    assert [model_key for model_key, result in results] == ["gemini", "qwen"]
+    assert [model_key for model_key, result in results] == ["gemini", "ollama"]
     assert results[0][1]["answer"] == "gemini"
+
+
+def test_iter_model_results_logs_liveqa_api_linked_state(monkeypatch, caplog):
+    streamlit_app = streamlit_app_module()
+
+    def fake_call_rag(url, payload):
+        return {"answer": "ok", "sources": [{"chunk_id": "jo-39"}], "elapsed_ms": 12}
+
+    monkeypatch.setattr(streamlit_app, "_call_rag", fake_call_rag)
+    caplog.set_level(logging.INFO, logger="llmenhance.liveqa")
+
+    list(
+        streamlit_app._iter_model_results(
+            {"question": "leave policy"},
+            selected_ollama_model="exaone3.5:7.8b",
+            gemini_config={"enabled": False},
+            bedrock_config={"enabled": False},
+        )
+    )
+
+    assert "LIVEQA_API_LINKED provider=ollama" in caplog.text
+    assert "endpoint=http://localhost:8000/api/ask/qwen" in caplog.text
+    assert "model=exaone3.5:7.8b" in caplog.text
+    assert "LIVEQA_API_RESULT provider=ollama status=ok sources=1 elapsed_ms=12" in caplog.text

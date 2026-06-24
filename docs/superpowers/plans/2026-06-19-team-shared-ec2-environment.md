@@ -1,4 +1,4 @@
-# Team Shared EC2 Environment Implementation Plan
+﻿# Team Shared EC2 Environment Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -15,7 +15,7 @@
 The team setup is successful only when all of these are true:
 
 - `.env` contains `TEAM_ENV_PROFILE=shared-ec2`.
-- `.env` contains `OLLAMA_BASE_URL=http://16.208.81.115:11434`.
+- `.env` contains `OLLAMA_BASE_URL=http://YOUR_EC2_PUBLIC_IP:11434`.
 - `.env` contains `LLM_MODEL=qwen3:4b-instruct`.
 - `.env` contains `EMBEDDING_MODEL=bge-m3`.
 - `docker compose run --rm rag-api python -m app.healthcheck` prints the shared EC2 Ollama URL.
@@ -69,14 +69,14 @@ The team setup is successful only when all of these are true:
 
 **Files:**
 - No repository files.
-- AWS resource: EC2 instance `i-0ccf9071972894f30` in `ap-northeast-3`.
+- AWS resource: EC2 instance `YOUR_EC2_INSTANCE_ID` in `ap-northeast-3`.
 
 - [ ] **Step 1: Confirm the current endpoint**
 
 Run:
 
 ```powershell
-Invoke-RestMethod http://16.208.81.115:11434/api/tags | ConvertTo-Json -Depth 6
+Invoke-RestMethod http://YOUR_EC2_PUBLIC_IP:11434/api/tags | ConvertTo-Json -Depth 6
 ```
 
 Expected: JSON includes both `qwen3:4b-instruct` and `bge-m3:latest`.
@@ -87,7 +87,7 @@ Run:
 
 ```powershell
 $region = "ap-northeast-3"
-$instanceId = "i-0ccf9071972894f30"
+$instanceId = "YOUR_EC2_INSTANCE_ID"
 $allocation = aws ec2 allocate-address --region $region --domain vpc | ConvertFrom-Json
 aws ec2 associate-address `
   --region $region `
@@ -104,12 +104,12 @@ Expected: AWS prints a stable public IPv4 address.
 
 - [ ] **Step 3: Verify the stable endpoint**
 
-Use the Elastic IP printed in Step 2. The current shared team endpoint is `16.208.81.115`.
+Use the Elastic IP printed in Step 2. The current shared team endpoint is `YOUR_EC2_PUBLIC_IP`.
 
 Run:
 
 ```powershell
-Invoke-RestMethod http://16.208.81.115:11434/api/tags | ConvertTo-Json -Depth 6
+Invoke-RestMethod http://YOUR_EC2_PUBLIC_IP:11434/api/tags | ConvertTo-Json -Depth 6
 ```
 
 Expected: JSON includes both `qwen3:4b-instruct` and `bge-m3:latest`.
@@ -149,7 +149,7 @@ def test_shared_ec2_env_template_uses_team_endpoint() -> None:
     env_template = read_repo_file(".env.shared-ec2.example")
 
     assert "TEAM_ENV_PROFILE=shared-ec2" in env_template
-    assert "OLLAMA_BASE_URL=http://16.208.81.115:11434" in env_template
+    assert "OLLAMA_BASE_URL=http://YOUR_EC2_PUBLIC_IP:11434" in env_template
     assert "LLM_MODEL=qwen3:4b-instruct" in env_template
     assert "EMBEDDING_MODEL=bge-m3" in env_template
     assert "QDRANT_URL=http://qdrant:6333" in env_template
@@ -187,7 +187,7 @@ Create this exact file:
 
 ```env
 TEAM_ENV_PROFILE=shared-ec2
-OLLAMA_BASE_URL=http://16.208.81.115:11434
+OLLAMA_BASE_URL=http://YOUR_EC2_PUBLIC_IP:11434
 LLM_MODEL=qwen3:4b-instruct
 EMBEDDING_MODEL=bge-m3
 
@@ -649,7 +649,7 @@ def test_team_environment_doc_exists_and_mentions_security_group() -> None:
 
     assert "shared-ec2" in doc
     assert "local-ollama" in doc
-    assert "http://16.208.81.115:11434" in doc
+    assert "http://YOUR_EC2_PUBLIC_IP:11434" in doc
     assert "security group" in doc
     assert "SETUP_OK" in doc
 ```
@@ -692,7 +692,7 @@ The shared profile creates `.env` from `.env.shared-ec2.example` and uses:
 
 ```env
 TEAM_ENV_PROFILE=shared-ec2
-OLLAMA_BASE_URL=http://16.208.81.115:11434
+OLLAMA_BASE_URL=http://YOUR_EC2_PUBLIC_IP:11434
 LLM_MODEL=qwen3:4b-instruct
 EMBEDDING_MODEL=bge-m3
 ```
@@ -745,7 +745,7 @@ local repo + Docker Compose
 ## Shared EC2 Endpoint
 
 ```env
-OLLAMA_BASE_URL=http://16.208.81.115:11434
+OLLAMA_BASE_URL=http://YOUR_EC2_PUBLIC_IP:11434
 LLM_MODEL=qwen3:4b-instruct
 EMBEDDING_MODEL=bge-m3
 ```
@@ -753,7 +753,7 @@ EMBEDDING_MODEL=bge-m3
 Verify the endpoint directly:
 
 ```powershell
-Invoke-RestMethod http://16.208.81.115:11434/api/tags
+Invoke-RestMethod http://YOUR_EC2_PUBLIC_IP:11434/api/tags
 ```
 
 ## Security Group Access
@@ -868,7 +868,7 @@ git commit -m "chore: standardize team development environment"
 ## Self-Review
 
 - Spec coverage: The plan covers README-driven agent setup, team-shared EC2 endpoint use, local-only env generation, local Ollama fallback, verification, and tests.
-- Placeholder scan: Elastic IP allocation in Task 1 is complete; the current working endpoint `http://16.208.81.115:11434` is used everywhere else so the implementation can proceed without guessing.
+- Placeholder scan: Elastic IP allocation in Task 1 is complete; the current working endpoint `http://YOUR_EC2_PUBLIC_IP:11434` is used everywhere else so the implementation can proceed without guessing.
 - Type consistency: Profile names are consistently `shared-ec2` and `local-ollama`; model names are consistently `qwen3:4b-instruct` and `bge-m3`; success markers are consistently `SETUP_DONE` and `SETUP_OK`.
 
 Plan complete and saved to `docs/superpowers/plans/2026-06-19-team-shared-ec2-environment.md`.

@@ -30,7 +30,7 @@ local repo + Docker Compose
 
 ```env
 TEAM_ENV_PROFILE=shared-ec2
-OLLAMA_BASE_URL=http://16.208.81.115:11434
+OLLAMA_BASE_URL=http://YOUR_EC2_PUBLIC_IP:11434
 LLM_MODEL=qwen3:4b-instruct
 EMBEDDING_MODEL=bge-m3
 ```
@@ -38,7 +38,7 @@ EMBEDDING_MODEL=bge-m3
 Verify the endpoint directly:
 
 ```powershell
-Invoke-RestMethod http://16.208.81.115:11434/api/tags
+Invoke-RestMethod http://YOUR_EC2_PUBLIC_IP:11434/api/tags
 ```
 
 ## Security Group Access

@@ -1,0 +1,111 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080" role="img" aria-labelledby="title desc">
+  <title id="title">RAG 챗봇 질문 처리 흐름</title>
+  <desc id="desc">사용자 질문부터 질문 정규화, 임베딩, Qdrant 검색, 컨텍스트 구성, LLM 전달, 답변과 출처 반환까지의 RAG 챗봇 흐름도</desc>
+  <defs>
+    <style>
+      .bg { fill: #f8fafc; }
+      .title { fill: #0f2a56; font: 800 66px "Noto Sans KR", "Malgun Gothic", Arial, sans-serif; }
+      .subtitle { fill: #334155; font: 500 30px "Noto Sans KR", "Malgun Gothic", Arial, sans-serif; }
+      .box { fill: #ffffff; stroke-width: 4; filter: url(#shadow); }
+      .box-blue { stroke: #123c73; }
+      .box-teal { stroke: #087b83; }
+      .step-num { fill: #ffffff; font: 800 32px Arial, sans-serif; text-anchor: middle; dominant-baseline: central; }
+      .label { font: 800 31px "Noto Sans KR", "Malgun Gothic", Arial, sans-serif; text-anchor: middle; fill: #0f2a56; }
+      .label-small { font: 700 25px "Noto Sans KR", "Malgun Gothic", Arial, sans-serif; text-anchor: middle; fill: #087b83; }
+      .arrow { stroke: #123c73; stroke-width: 5; fill: none; stroke-linecap: round; stroke-linejoin: round; marker-end: url(#arrowhead); }
+      .note { fill: #0f2a56; font: 700 33px "Noto Sans KR", "Malgun Gothic", Arial, sans-serif; text-anchor: middle; }
+      .caption { fill: #64748b; font: 500 23px "Noto Sans KR", "Malgun Gothic", Arial, sans-serif; text-anchor: middle; }
+    </style>
+    <filter id="shadow" x="-15%" y="-15%" width="130%" height="140%">
+      <feDropShadow dx="0" dy="12" stdDeviation="10" flood-color="#0f172a" flood-opacity="0.10"/>
+    </filter>
+    <marker id="arrowhead" markerWidth="16" markerHeight="16" refX="14" refY="8" orient="auto">
+      <path d="M 2 2 L 14 8 L 2 14 Z" fill="#123c73"/>
+    </marker>
+    <linearGradient id="blueCircle" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1d4ed8"/>
+      <stop offset="1" stop-color="#0f2a56"/>
+    </linearGradient>
+    <linearGradient id="tealCircle" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#11a5a5"/>
+      <stop offset="1" stop-color="#087b83"/>
+    </linearGradient>
+  </defs>
+
+  <rect class="bg" width="1920" height="1080"/>
+
+  <text class="title" x="960" y="145" text-anchor="middle">RAG 챗봇 질문 처리 흐름</text>
+  <text class="subtitle" x="960" y="208" text-anchor="middle">질문을 검색용으로 정리하고, 관련 문서 조항만 LLM에 전달해 근거 기반 답변을 생성</text>
+
+  <g transform="translate(0, 0)">
+    <rect class="box box-blue" x="50" y="355" rx="24" ry="24" width="210" height="255"/>
+    <circle cx="155" cy="420" r="34" fill="url(#blueCircle)"/>
+    <text class="step-num" x="155" y="420">1</text>
+    <text class="label" x="155" y="505">사용자 질문</text>
+  </g>
+
+  <path class="arrow" d="M 274 482 H 314"/>
+
+  <g>
+    <rect class="box box-teal" x="330" y="355" rx="24" ry="24" width="210" height="255"/>
+    <circle cx="435" cy="420" r="34" fill="url(#tealCircle)"/>
+    <text class="step-num" x="435" y="420">2</text>
+    <text class="label" x="435" y="493">질문 정규화</text>
+    <text class="label-small" x="435" y="538">의도 파악</text>
+  </g>
+
+  <path class="arrow" d="M 554 482 H 594"/>
+
+  <g>
+    <rect class="box box-blue" x="610" y="355" rx="24" ry="24" width="230" height="255"/>
+    <circle cx="725" cy="420" r="34" fill="url(#blueCircle)"/>
+    <text class="step-num" x="725" y="420">3</text>
+    <text class="label" x="725" y="493">Embedding</text>
+    <text class="label-small" x="725" y="538">Dense + Sparse</text>
+  </g>
+
+  <path class="arrow" d="M 854 482 H 894"/>
+
+  <g>
+    <rect class="box box-teal" x="910" y="355" rx="24" ry="24" width="230" height="255"/>
+    <circle cx="1025" cy="420" r="34" fill="url(#tealCircle)"/>
+    <text class="step-num" x="1025" y="420">4</text>
+    <text class="label" x="1025" y="493">Qdrant 검색</text>
+    <text class="label-small" x="1025" y="538">Hybrid RAG</text>
+  </g>
+
+  <path class="arrow" d="M 1154 482 H 1194"/>
+
+  <g>
+    <rect class="box box-blue" x="1210" y="355" rx="24" ry="24" width="230" height="255"/>
+    <circle cx="1325" cy="420" r="34" fill="url(#blueCircle)"/>
+    <text class="step-num" x="1325" y="420">5</text>
+    <text class="label" x="1325" y="493">Context 구성</text>
+    <text class="label-small" x="1325" y="538">관련 조항 확장</text>
+  </g>
+
+  <path class="arrow" d="M 1454 482 H 1494"/>
+
+  <g>
+    <rect class="box box-teal" x="1510" y="355" rx="24" ry="24" width="230" height="255"/>
+    <circle cx="1625" cy="420" r="34" fill="url(#tealCircle)"/>
+    <text class="step-num" x="1625" y="420">6</text>
+    <text class="label" x="1625" y="493">LLM 전달</text>
+    <text class="label-small" x="1625" y="538">Qwen3 Instruct</text>
+  </g>
+
+  <path class="arrow" d="M 1754 482 H 1794"/>
+
+  <g>
+    <rect class="box box-blue" x="1770" y="355" rx="24" ry="24" width="110" height="255"/>
+    <circle cx="1825" cy="420" r="30" fill="url(#blueCircle)"/>
+    <text class="step-num" x="1825" y="420">7</text>
+    <text class="label" x="1825" y="490" style="font-size:24px">답변</text>
+    <text class="label-small" x="1825" y="529" style="font-size:20px">+ 출처</text>
+    <text class="label-small" x="1825" y="562" style="font-size:20px">반환</text>
+  </g>
+
+  <rect x="340" y="735" width="1240" height="88" rx="16" ry="16" fill="#e0f2fe" stroke="#7dd3fc" stroke-width="2"/>
+  <text class="note" x="960" y="790">문서 근거만 사용해 답변하고, 근거가 없으면 “확인 불가”로 응답</text>
+  <text class="caption" x="960" y="875">정규화 질문 + 검색된 context + 시스템 지시문을 함께 전달하여 출처 기반 답변을 생성합니다.</text>
+</svg>

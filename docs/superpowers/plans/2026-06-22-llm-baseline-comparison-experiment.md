@@ -1,4 +1,4 @@
-# LLM Baseline Comparison Experiment Implementation Plan
+﻿# LLM Baseline Comparison Experiment Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -40,18 +40,18 @@ The first experiment is not intended to find each model's best custom settings. 
 Create a focused first-pass set with 12 questions:
 
 ```jsonl
-{"id":"leave_deadline_01","question":"연차 신청은 며칠 전까지 해야 하나요?","expected_source":["jo-39"],"answer_type":"answerable","must_include":["최소 3영업일 전","사내 근태 시스템"]}
-{"id":"leave_general_01","question":"연차 신청 규정에 대해 알려줘","expected_source":["jo-39"],"answer_type":"answerable","must_include":["연차","3영업일"]}
-{"id":"leave_eligibility_01","question":"2일 뒤에 연차 신청하려고 하는데 될까요?","expected_source":["jo-39"],"answer_type":"answerable","must_include":["충족하지","3영업일"]}
-{"id":"sick_leave_01","question":"병가는 어떻게 신청해야 하나요?","expected_source":["jo-41"],"answer_type":"answerable","must_include":["진단서","3영업일"]}
-{"id":"remote_work_01","question":"재택근무 승인 절차는 어떻게 되나요?","expected_source":["jo-44"],"answer_type":"answerable","must_include":["승인"]}
-{"id":"expense_evidence_01","question":"경비 처리 시 어떤 증빙이 필요한가요?","expected_source":["jo-61"],"answer_type":"answerable","must_include":["증빙"]}
-{"id":"corp_card_01","question":"법인카드 사용 후 전표 처리는 언제까지 해야 하나요?","expected_source":["jo-62"],"answer_type":"answerable","must_include":["7영업일"]}
-{"id":"travel_settlement_01","question":"출장비 정산은 언제까지 해야 하나요?","expected_source":["jo-64"],"answer_type":"answerable","must_include":["정산"]}
-{"id":"privacy_doc_01","question":"개인정보가 포함된 문서는 어떻게 보관해야 하나요?","expected_source":["jo-75"],"answer_type":"answerable","must_include":["개인정보"]}
-{"id":"security_incident_01","question":"정보보안 사고가 발생하면 어떻게 보고해야 하나요?","expected_source":["jo-76"],"answer_type":"answerable","must_include":["보고"]}
-{"id":"unsupported_01","question":"사내 헬스장 이용 보조금은 얼마인가요?","expected_source":[],"answer_type":"fallback","must_include":["문서에서 확인되지 않습니다"]}
-{"id":"unsupported_02","question":"반려동물 동반 출근 규정은 어떻게 되나요?","expected_source":[],"answer_type":"fallback","must_include":["문서에서 확인되지 않습니다"]}
+{"id":"leave_deadline_01","question":"?곗감 ?좎껌? 硫곗튌 ?꾧퉴吏 ?댁빞 ?섎굹??","expected_source":["jo-39"],"answer_type":"answerable","must_include":["理쒖냼 3?곸뾽????,"?щ궡 洹쇳깭 ?쒖뒪??]}
+{"id":"leave_general_01","question":"?곗감 ?좎껌 洹쒖젙??????뚮젮以?,"expected_source":["jo-39"],"answer_type":"answerable","must_include":["?곗감","3?곸뾽??]}
+{"id":"leave_eligibility_01","question":"2???ㅼ뿉 ?곗감 ?좎껌?섎젮怨??섎뒗???좉퉴??","expected_source":["jo-39"],"answer_type":"answerable","must_include":["異⑹”?섏?","3?곸뾽??]}
+{"id":"sick_leave_01","question":"蹂묎????대뼸寃??좎껌?댁빞 ?섎굹??","expected_source":["jo-41"],"answer_type":"answerable","must_include":["吏꾨떒??,"3?곸뾽??]}
+{"id":"remote_work_01","question":"?ы깮洹쇰Т ?뱀씤 ?덉감???대뼸寃??섎굹??","expected_source":["jo-44"],"answer_type":"answerable","must_include":["?뱀씤"]}
+{"id":"expense_evidence_01","question":"寃쎈퉬 泥섎━ ???대뼡 利앸튃???꾩슂?쒓???","expected_source":["jo-61"],"answer_type":"answerable","must_include":["利앸튃"]}
+{"id":"corp_card_01","question":"踰뺤씤移대뱶 ?ъ슜 ???꾪몴 泥섎━???몄젣源뚯? ?댁빞 ?섎굹??","expected_source":["jo-62"],"answer_type":"answerable","must_include":["7?곸뾽??]}
+{"id":"travel_settlement_01","question":"異쒖옣鍮??뺤궛? ?몄젣源뚯? ?댁빞 ?섎굹??","expected_source":["jo-64"],"answer_type":"answerable","must_include":["?뺤궛"]}
+{"id":"privacy_doc_01","question":"媛쒖씤?뺣낫媛 ?ы븿??臾몄꽌???대뼸寃?蹂닿??댁빞 ?섎굹??","expected_source":["jo-75"],"answer_type":"answerable","must_include":["媛쒖씤?뺣낫"]}
+{"id":"security_incident_01","question":"?뺣낫蹂댁븞 ?ш퀬媛 諛쒖깮?섎㈃ ?대뼸寃?蹂닿퀬?댁빞 ?섎굹??","expected_source":["jo-76"],"answer_type":"answerable","must_include":["蹂닿퀬"]}
+{"id":"unsupported_01","question":"?щ궡 ?ъ뒪???댁슜 蹂댁“湲덉? ?쇰쭏?멸???","expected_source":[],"answer_type":"fallback","must_include":["臾몄꽌?먯꽌 ?뺤씤?섏? ?딆뒿?덈떎"]}
+{"id":"unsupported_02","question":"諛섎젮?숇Ъ ?숇컲 異쒓렐 洹쒖젙? ?대뼸寃??섎굹??","expected_source":[],"answer_type":"fallback","must_include":["臾몄꽌?먯꽌 ?뺤씤?섏? ?딆뒿?덈떎"]}
 ```
 
 If an expected `jo-*` does not exist in the current `datasets/docs/regulations.md`, replace that case with a question whose answer is confirmed by the current corpus before running the experiment.
@@ -175,17 +175,17 @@ def test_build_fixed_context_uses_one_prompt_for_all_models(monkeypatch):
     monkeypatch.setattr(
         runner,
         "search_chunks",
-        lambda *args, **kwargs: [{"score": 1.0, "payload": {"chunk_id": "jo-39", "parent_id": "jo-39", "source_path": "datasets/docs/regulations.md", "title": "regulations.md", "jo": "제39조", "path": "제39조", "parent_text": "연차는 최소 3영업일 전까지 신청한다."}}],
+        lambda *args, **kwargs: [{"score": 1.0, "payload": {"chunk_id": "jo-39", "parent_id": "jo-39", "source_path": "datasets/docs/regulations.md", "title": "regulations.md", "jo": "??9議?, "path": "??9議?, "parent_text": "?곗감??理쒖냼 3?곸뾽???꾧퉴吏 ?좎껌?쒕떎."}}],
     )
 
     context = runner.build_fixed_context(
-        question="연차 신청은 며칠 전까지 해야 하나요?",
+        question="?곗감 ?좎껌? 硫곗튌 ?꾧퉴吏 ?댁빞 ?섎굹??",
         settings=settings,
         top_k=5,
     )
 
     assert context.question_id == ""
-    assert context.retrieval_question == "연차 신청은 며칠 전까지 해야 하나요?"
+    assert context.retrieval_question == "?곗감 ?좎껌? 硫곗튌 ?꾧퉴吏 ?댁빞 ?섎굹??"
     assert context.sources[0]["chunk_id"] == "jo-39"
     assert "[context]" in context.user_prompt
     assert "[canonical_question]" in context.user_prompt
@@ -347,11 +347,11 @@ def test_run_one_model_routes_local_and_gemini_models(monkeypatch):
     calls = []
     context = runner.FixedContext(
         question_id="leave_deadline_01",
-        question="연차 신청은 며칠 전까지 해야 하나요?",
+        question="?곗감 ?좎껌? 硫곗튌 ?꾧퉴吏 ?댁빞 ?섎굹??",
         intent="deadline_lookup",
-        retrieval_question="연차 신청은 며칠 전까지 해야 하나요?",
-        canonical_question="연차 신청은 며칠 전까지 해야 하나요?",
-        user_prompt="[context]\n연차는 3영업일 전 신청\n\n[canonical_question]\n연차 신청은 며칠 전까지 해야 하나요?",
+        retrieval_question="?곗감 ?좎껌? 硫곗튌 ?꾧퉴吏 ?댁빞 ?섎굹??",
+        canonical_question="?곗감 ?좎껌? 硫곗튌 ?꾧퉴吏 ?댁빞 ?섎굹??",
+        user_prompt="[context]\n?곗감??3?곸뾽?????좎껌\n\n[canonical_question]\n?곗감 ?좎껌? 硫곗튌 ?꾧퉴吏 ?댁빞 ?섎굹??",
         user_prompt_sha256="abc",
         sources=[{"source_path": "datasets/docs/regulations.md", "chunk_id": "jo-39", "score": 1.0}],
     )
@@ -485,13 +485,13 @@ def test_score_result_checks_expected_sources_and_required_phrases():
 
     question = runner.EvalQuestion(
         id="leave_deadline_01",
-        question="연차 신청은 며칠 전까지 해야 하나요?",
+        question="?곗감 ?좎껌? 硫곗튌 ?꾧퉴吏 ?댁빞 ?섎굹??",
         expected_source=["jo-39"],
         answer_type="answerable",
-        must_include=["3영업일", "근태 시스템"],
+        must_include=["3?곸뾽??, "洹쇳깭 ?쒖뒪??],
     )
     result = {
-        "answer": "연차는 최소 3영업일 전까지 사내 근태 시스템으로 신청해야 합니다.",
+        "answer": "?곗감??理쒖냼 3?곸뾽???꾧퉴吏 ?щ궡 洹쇳깭 ?쒖뒪?쒖쑝濡??좎껌?댁빞 ?⑸땲??",
         "sources": [{"chunk_id": "jo-39"}],
     }
 
@@ -532,7 +532,7 @@ def score_result(question: EvalQuestion, result: dict[str, Any]) -> dict[str, bo
         "expected_source_hit": not expected or bool(expected & source_ids),
         "must_include_hit": all(phrase in answer for phrase in question.must_include),
         "fallback_hit": question.answer_type == "fallback"
-        and "문서에서 확인되지 않습니다" in answer,
+        and "臾몄꽌?먯꽌 ?뺤씤?섏? ?딆뒿?덈떎" in answer,
     }
 ```
 
@@ -578,7 +578,7 @@ def test_result_record_contains_experiment_metadata():
             "gemini_thinking_budget": 0,
         },
         question={"id": "leave_deadline_01"},
-        model_result={"model": "qwen3:4b-instruct", "answer": "답변"},
+        model_result={"model": "qwen3:4b-instruct", "answer": "?듬?"},
         score={"expected_source_hit": True, "must_include_hit": True, "fallback_hit": False},
     )
 
@@ -851,7 +851,7 @@ Expected:
 
 ```text
 TEAM_ENV_PROFILE=shared-ec2
-OLLAMA_BASE_URL=http://16.208.81.115:11434
+OLLAMA_BASE_URL=http://YOUR_EC2_PUBLIC_IP:11434
 LLM_MODEL=qwen3:4b-instruct
 RETRIEVAL_TOP_K=5
 TEMPERATURE=0.2
@@ -982,12 +982,12 @@ For each model, the output shows up to three concrete failure examples with scor
 Record the decision in the thread:
 
 ```text
-1차 실험 결론:
-- 가장 빠른 모델:
-- 가장 안정적으로 근거 조항을 따른 모델:
-- hallucination/fallback 문제가 가장 적은 모델:
-- 2차 실험에서 튜닝할 후보:
-- 정규화/retrieval 개선이 필요한 질문 유형:
+1李??ㅽ뿕 寃곕줎:
+- 媛??鍮좊Ⅸ 紐⑤뜽:
+- 媛???덉젙?곸쑝濡?洹쇨굅 議고빆???곕Ⅸ 紐⑤뜽:
+- hallucination/fallback 臾몄젣媛 媛???곸? 紐⑤뜽:
+- 2李??ㅽ뿕?먯꽌 ?쒕떇???꾨낫:
+- ?뺢퇋??retrieval 媛쒖꽑???꾩슂??吏덈Ц ?좏삎:
 ```
 
 Do not decide the production model using only `avg_elapsed_ms`. The production decision must consider source hit, required phrase hit, fallback correctness, and manual review examples.

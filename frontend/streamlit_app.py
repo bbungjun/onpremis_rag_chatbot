@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import logging
 import os
+from collections.abc import Iterable
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any
 
@@ -8,7 +10,8 @@ import httpx
 import streamlit as st
 
 API_BASE = os.getenv("RAG_API_URL", "http://localhost:8000")
-QWEN_ENDPOINT = f"{API_BASE}/api/ask/qwen"
+OLLAMA_ENDPOINT = f"{API_BASE}/api/ask/qwen"
+QWEN_ENDPOINT = OLLAMA_ENDPOINT
 GEMINI_ENDPOINT = f"{API_BASE}/api/ask/gemini"
 BEDROCK_ENDPOINT = f"{API_BASE}/api/ask/bedrock"
 HEALTH_ENDPOINT = f"{API_BASE}/health/services"
@@ -17,6 +20,10 @@ HEALTH_TIMEOUT_SECONDS = 6.0
 OLLAMA_MODEL_OPTIONS = {
     "Qwen": "qwen3:4b-instruct",
     "EXAONE": "exaone3.5:7.8b",
+}
+OLLAMA_MESSAGE_KEYS = {
+    "qwen3:4b-instruct": "ollama_qwen_messages",
+    "exaone3.5:7.8b": "ollama_exaone_messages",
 }
 GEMINI_MODEL_OPTIONS = {
     "Gemini 2.5 Flash": "gemini-2.5-flash",
@@ -32,6 +39,12 @@ DEFAULT_GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 DEFAULT_GEMINI_PROJECT = os.getenv("GOOGLE_CLOUD_PROJECT") or os.getenv("GCP_PROJECT_ID", "")
 DEFAULT_BEDROCK_REGION = os.getenv("BEDROCK_REGION", "ap-northeast-3")
 DEFAULT_BEDROCK_MODEL = os.getenv("BEDROCK_MODEL_ID", "jp.anthropic.claude-sonnet-4-6")
+LOGGER = logging.getLogger("llmenhance.liveqa")
+LOGGER.setLevel(getattr(logging, os.getenv("LIVEQA_LOG_LEVEL", "INFO").upper(), logging.INFO))
+if not LOGGER.handlers:
+    _liveqa_handler = logging.StreamHandler()
+    _liveqa_handler.setFormatter(logging.Formatter("%(levelname)s:%(name)s:%(message)s"))
+    LOGGER.addHandler(_liveqa_handler)
 
 STATUS_LABELS = {
     "ok": "정상",
@@ -52,8 +65,12 @@ def main() -> None:
 
 
 def _init_state() -> None:
+    existing_ollama_messages = st.session_state.get(
+        "ollama_messages", st.session_state.get("qwen_messages", [])
+    )
     defaults: dict[str, Any] = {
-        "qwen_messages": [],
+        "ollama_qwen_messages": existing_ollama_messages,
+        "ollama_exaone_messages": [],
         "gemini_messages": [],
         "bedrock_messages": [],
         "service_status": None,
@@ -61,6 +78,8 @@ def _init_state() -> None:
     for key, value in defaults.items():
         if key not in st.session_state:
             st.session_state[key] = value
+    st.session_state["ollama_messages"] = st.session_state["ollama_qwen_messages"]
+    st.session_state["qwen_messages"] = st.session_state["ollama_qwen_messages"]
 
 
 def _render_sidebar() -> None:
@@ -83,7 +102,7 @@ def _render_sidebar() -> None:
 
         st.divider()
         _render_status_line("API 서버", status.get("api", {}))
-        _render_status_line("Ollama / Qwen", status.get("ollama", {}))
+        _render_status_line("Ollama", status.get("ollama", {}))
         _render_status_line("Qdrant", status.get("qdrant", {}))
         _render_status_line("Vertex Gemini", status.get("gemini", {}))
         _render_status_line("AWS Bedrock", status.get("bedrock", {}))
@@ -106,14 +125,16 @@ def _render_main() -> None:
 
     status = st.session_state.service_status
     cloud_configs = _cloud_session_configs()
-    col_qwen, col_gemini, col_bedrock = st.columns(3)
+    col_ollama, col_gemini, col_bedrock = st.columns(3)
 
-    with col_qwen:
+    with col_ollama:
         _render_panel_header("EC2 Ollama", status, "ollama")
         selected_ollama_model = _render_ollama_model_selector()
+        ollama_messages_key = _ollama_messages_key(selected_ollama_model)
+        _ensure_message_state(ollama_messages_key)
         st.caption("온프레미스 RAG 답변 생성")
         st.divider()
-        _render_chat_history(st.session_state.qwen_messages)
+        _render_chat_history(st.session_state[ollama_messages_key])
 
     with col_gemini:
         _render_panel_header("Vertex Gemini", status, "gemini")
@@ -132,24 +153,27 @@ def _render_main() -> None:
         return
 
     active_model_keys = _active_model_keys(cloud_configs)
-    _append_user_message(question, active_model_keys)
+    active_message_keys = _active_message_keys(
+        cloud_configs, selected_ollama_model=selected_ollama_model
+    )
+    _append_user_message(question, active_message_keys.values())
     payload = {"question": question}
     live_containers = {
-        "qwen": _render_live_user_message(col_qwen, question),
+        "ollama": _render_live_user_message(col_ollama, question),
     }
     if cloud_configs["gemini"]["enabled"]:
         live_containers["gemini"] = _render_live_user_message(col_gemini, question)
     if cloud_configs["bedrock"]["enabled"]:
         live_containers["bedrock"] = _render_live_user_message(col_bedrock, question)
 
-    with st.spinner("두 모델에서 동시에 답변을 생성하는 중..."):
+    with st.spinner(_liveqa_spinner_text(active_model_keys)):
         for model_key, result in _iter_model_results(
             payload,
             selected_ollama_model=selected_ollama_model,
             gemini_config=cloud_configs["gemini"],
             bedrock_config=cloud_configs["bedrock"],
         ):
-            messages_key = f"{model_key}_messages"
+            messages_key = active_message_keys[model_key]
             _append_assistant_message(messages_key, result)
             with live_containers[model_key]:
                 _render_message(st.session_state[messages_key][-1])
@@ -167,15 +191,19 @@ def _fetch_service_status() -> dict[str, Any]:
     try:
         response = httpx.get(HEALTH_ENDPOINT, timeout=HEALTH_TIMEOUT_SECONDS)
         response.raise_for_status()
-        return response.json()
+        status = response.json()
+        _log_liveqa_service_status(status)
+        return status
     except Exception as exc:
-        return {
+        status = {
             "api": {"status": "error", "detail": f"API 서버 연결 실패: {exc}"},
             "ollama": {"status": "unknown", "detail": ""},
             "qdrant": {"status": "unknown", "detail": ""},
             "gemini": {"status": "unknown", "detail": ""},
             "bedrock": {"status": "unknown", "detail": ""},
         }
+        _log_liveqa_service_status(status)
+        return status
 
 
 def _render_ollama_model_selector() -> str:
@@ -276,12 +304,27 @@ def _cloud_session_configs() -> dict[str, dict[str, Any]]:
 
 
 def _active_model_keys(cloud_configs: dict[str, dict[str, Any]]) -> list[str]:
-    keys = ["qwen"]
+    keys = ["ollama"]
     if cloud_configs["gemini"]["enabled"]:
         keys.append("gemini")
     if cloud_configs["bedrock"]["enabled"]:
         keys.append("bedrock")
     return keys
+
+
+def _active_message_keys(
+    cloud_configs: dict[str, dict[str, Any]], *, selected_ollama_model: str
+) -> dict[str, str]:
+    keys = {"ollama": _ollama_messages_key(selected_ollama_model)}
+    if cloud_configs["gemini"]["enabled"]:
+        keys["gemini"] = "gemini_messages"
+    if cloud_configs["bedrock"]["enabled"]:
+        keys["bedrock"] = "bedrock_messages"
+    return keys
+
+
+def _ollama_messages_key(selected_ollama_model: str) -> str:
+    return OLLAMA_MESSAGE_KEYS.get(selected_ollama_model, "ollama_messages")
 
 
 def _ask_both_models(
@@ -315,13 +358,21 @@ def _iter_model_results(
         gemini_config=gemini_config,
         bedrock_config=bedrock_config,
     )
+    _log_liveqa_api_links(requests)
     with ThreadPoolExecutor(max_workers=len(requests)) as executor:
         futures = {
-            executor.submit(_call_rag, endpoint, request_payload): model_key
+            executor.submit(_call_rag, endpoint, request_payload): (
+                model_key,
+                endpoint,
+                request_payload,
+            )
             for model_key, endpoint, request_payload in requests
         }
         for future in as_completed(futures):
-            yield futures[future], future.result()
+            model_key, _endpoint, _request_payload = futures[future]
+            result = future.result()
+            _log_liveqa_api_result(model_key, result)
+            yield model_key, result
 
 
 def _model_requests(
@@ -332,7 +383,7 @@ def _model_requests(
     bedrock_config: dict[str, Any] | None,
 ) -> list[tuple[str, str, dict[str, Any]]]:
     requests = [
-        ("qwen", QWEN_ENDPOINT, {**payload, "llm_model": selected_ollama_model}),
+        ("ollama", OLLAMA_ENDPOINT, {**payload, "llm_model": selected_ollama_model}),
     ]
 
     if _provider_enabled(gemini_config, default=True):
@@ -415,13 +466,15 @@ def _error_detail(response: httpx.Response) -> str:
     return str(detail)
 
 
-def _append_user_message(question: str, model_keys: list[str] | None = None) -> None:
+def _append_user_message(question: str, message_keys: Iterable[str] | None = None) -> None:
     user_message = {"role": "user", "content": question}
-    for model_key in model_keys or ["qwen", "gemini"]:
-        st.session_state[f"{model_key}_messages"].append(user_message)
+    for messages_key in message_keys or ["ollama_qwen_messages", "gemini_messages"]:
+        _ensure_message_state(messages_key)
+        st.session_state[messages_key].append(user_message)
 
 
 def _append_assistant_message(messages_key: str, result: dict[str, Any]) -> None:
+    _ensure_message_state(messages_key)
     st.session_state[messages_key].append(
         {
             "role": "assistant",
@@ -497,6 +550,58 @@ def _overall_status(status: dict[str, Any]) -> str:
     if any(item in {"warning", "unknown"} for item in service_statuses):
         return "warning"
     return "ok"
+
+
+def _ensure_message_state(messages_key: str) -> None:
+    if messages_key not in st.session_state:
+        st.session_state[messages_key] = []
+
+
+def _liveqa_spinner_text(active_model_keys: list[str]) -> str:
+    if active_model_keys == ["ollama"]:
+        return "선택한 Ollama 모델에서 답변을 생성하는 중..."
+    return "선택한 Ollama 모델과 활성 Cloud 세션에서 답변을 생성하는 중..."
+
+
+def _log_liveqa_service_status(status: dict[str, Any]) -> None:
+    for provider, service in status.items():
+        if not isinstance(service, dict):
+            continue
+        LOGGER.info(
+            "LIVEQA_SERVICE_STATUS provider=%s status=%s detail=%s",
+            provider,
+            service.get("status", "unknown"),
+            str(service.get("detail", "")),
+        )
+
+
+def _log_liveqa_api_links(requests: list[tuple[str, str, dict[str, Any]]]) -> None:
+    for provider, endpoint, payload in requests:
+        LOGGER.info(
+            "LIVEQA_API_LINKED provider=%s endpoint=%s model=%s enabled=true",
+            provider,
+            endpoint,
+            _request_model_name(provider, payload),
+        )
+
+
+def _log_liveqa_api_result(provider: str, result: dict[str, Any]) -> None:
+    LOGGER.info(
+        "LIVEQA_API_RESULT provider=%s status=ok sources=%s elapsed_ms=%s",
+        provider,
+        len(result.get("sources") or []),
+        result.get("elapsed_ms", 0),
+    )
+
+
+def _request_model_name(provider: str, payload: dict[str, Any]) -> str:
+    if provider == "ollama":
+        return str(payload.get("llm_model", ""))
+    if provider == "gemini":
+        return str(payload.get("gemini_model", DEFAULT_GEMINI_MODEL))
+    if provider == "bedrock":
+        return str(payload.get("bedrock_model_id", DEFAULT_BEDROCK_MODEL))
+    return ""
 
 
 if __name__ == "__main__":

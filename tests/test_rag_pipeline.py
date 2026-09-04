@@ -265,35 +265,8 @@ def test_answer_question_passes_structural_leave_canonical_question(monkeypatch)
     assert "사용자 조건이 M 이상이면 기준을 충족" in captured["user_prompt"]
 
 
-def test_answer_question_polishes_exaone_contradictory_leave_deadline_answer(monkeypatch):
-    pipeline = rag_pipeline()
-
-    monkeypatch.setattr(pipeline, "embed_text", lambda *args: [0.1, 0.2, 0.3])
-    monkeypatch.setattr(pipeline, "search_chunks", lambda *args, **kwargs: [child_hit()])
-    monkeypatch.setattr(
-        pipeline,
-        "chat_qwen",
-        lambda *args, **kwargs: (
-            "문서에 따르면 연차 신청은 최소 3영업일 전까지 해야 하므로 "
-            "4일 뒤라면 연차 신청이 불가능합니다."
-        ),
-    )
-
-    settings = make_settings()
-    settings.llm_model = "exaone3.5:7.8b"
-
-    result = pipeline.answer_question(
-        "4일뒤에 연차 신청하려고 하는데 가능할까요?",
-        5,
-        settings=settings,
-    )
-
-    assert "3영업일" in result["answer"]
-    assert "불가능합니다" not in result["answer"]
-    assert "영업일 기준으로 3영업일 이상 확보된다면 신청 가능합니다" in result["answer"]
-
-
-def test_answer_question_does_not_polish_qwen_leave_answer(monkeypatch):
+def test_answer_question_returns_llm_answer_unchanged_for_any_model(monkeypatch):
+    """모델이나 질문 유형에 따라 LLM 답변을 규칙으로 덮어쓰지 않는다."""
     pipeline = rag_pipeline()
     raw_answer = (
         "문서에 따르면 연차 신청은 최소 3영업일 전까지 해야 하므로 "
@@ -304,38 +277,17 @@ def test_answer_question_does_not_polish_qwen_leave_answer(monkeypatch):
     monkeypatch.setattr(pipeline, "search_chunks", lambda *args, **kwargs: [child_hit()])
     monkeypatch.setattr(pipeline, "chat_qwen", lambda *args, **kwargs: raw_answer)
 
-    result = pipeline.answer_question(
-        "4일뒤에 연차 신청하려고 하는데 가능할까요?",
-        5,
-        settings=make_settings(),
-    )
+    for model in ("exaone3.5:7.8b", "qwen3:4b-instruct"):
+        settings = make_settings()
+        settings.llm_model = model
 
-    assert result["answer"] == raw_answer
+        result = pipeline.answer_question(
+            "4일뒤에 연차 신청하려고 하는데 가능할까요?",
+            5,
+            settings=settings,
+        )
 
-
-def test_answer_question_does_not_polish_exaone_when_leave_lead_time_is_short(
-    monkeypatch,
-):
-    pipeline = rag_pipeline()
-    raw_answer = (
-        "문서에 따르면 연차 신청은 최소 3영업일 전까지 해야 하므로 "
-        "2일 뒤라면 문서 기준상 충족하지 않습니다."
-    )
-
-    monkeypatch.setattr(pipeline, "embed_text", lambda *args: [0.1, 0.2, 0.3])
-    monkeypatch.setattr(pipeline, "search_chunks", lambda *args, **kwargs: [child_hit()])
-    monkeypatch.setattr(pipeline, "chat_qwen", lambda *args, **kwargs: raw_answer)
-
-    settings = make_settings()
-    settings.llm_model = "exaone3.5:7.8b"
-
-    result = pipeline.answer_question(
-        "2일 뒤에 연차 신청하려고 하는데 될까요?",
-        5,
-        settings=settings,
-    )
-
-    assert result["answer"] == raw_answer
+        assert result["answer"] == raw_answer, model
 
 
 def test_answer_question_keeps_original_question_for_general_retrieval(monkeypatch):

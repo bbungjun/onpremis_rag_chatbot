@@ -78,7 +78,7 @@ def test_make_app_returns_runtime_status(tmp_path):
             retrieval_top_k=3,
             num_predict=192,
             llm_model="qwen3:4b-instruct",
-            ollama_base_url="http://16.208.81.115:11434",
+            ollama_base_url="http://203.0.113.10:11434",
         ),
         status_provider=lambda settings, env: {
             "local": {

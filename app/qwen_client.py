@@ -25,7 +25,7 @@ def chat_qwen(
     request_json = {
         "model": model,
         "stream": False,
-        "think": False,
+        "think": model.strip().lower().startswith("qwen3"),
         "messages": [
             {"role": "system", "content": _system_content(system_prompt)},
             {"role": "user", "content": user_prompt},

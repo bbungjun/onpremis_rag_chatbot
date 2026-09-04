@@ -25,6 +25,8 @@ qdrant_storage/
 # Logs
 *.log
 logs/
+reports/local-judge/
+reports/retrieval-eval/
 
 # Dependencies
 node_modules/
@@ -65,3 +67,10 @@ worktrees/
 
 # Local brainstorming sessions
 .superpowers/
+reports/github-actions-*/
+reports/*.html
+
+# Local scratch
+tmp/
+.omo/
+uv.lock

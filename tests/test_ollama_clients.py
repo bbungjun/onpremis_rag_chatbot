@@ -167,7 +167,7 @@ def test_chat_qwen_sends_separate_messages_guard_flags_and_options(monkeypatch):
     request_json = calls[0][1]
     assert request_json["model"] == "qwen3.6:latest"
     assert request_json["stream"] is False
-    assert request_json["think"] is False
+    assert request_json["think"] is True
     assert request_json["options"] == {
         "temperature": 0.2,
         "num_ctx": 4096,

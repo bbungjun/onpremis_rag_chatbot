@@ -1,4 +1,5 @@
 import re
+import subprocess
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -60,7 +61,8 @@ def test_shared_ec2_env_template_uses_team_endpoint() -> None:
     env_template = read_repo_file(".env.shared-ec2.example")
 
     assert "TEAM_ENV_PROFILE=shared-ec2" in env_template
-    assert "OLLAMA_BASE_URL=http://16.208.81.115:11434" in env_template
+    assert re.search(r"^OLLAMA_BASE_URL=http://[A-Za-z0-9_.-]+:11434$", env_template, re.M)
+    assert "YOUR_EC2_PUBLIC_IP" in env_template
     assert "LLM_MODEL=qwen3:4b-instruct" in env_template
     assert "EMBEDDING_MODEL=bge-m3" in env_template
     assert "QDRANT_URL=http://qdrant:6333" in env_template
@@ -141,6 +143,32 @@ def test_team_environment_doc_exists_and_mentions_security_group() -> None:
 
     assert "shared-ec2" in doc
     assert "local-ollama" in doc
-    assert "http://16.208.81.115:11434" in doc
+    assert re.search(r"http://[A-Za-z0-9_.-]+:11434", doc)
     assert "security group" in doc
     assert "SETUP_OK" in doc
+
+
+def test_tracked_files_do_not_contain_real_public_endpoint():
+    """추적 파일에는 실제 공인 IP 엔드포인트가 없어야 한다.
+
+    사설망(10/8, 172.16/12, 192.168/16)과 문서용 예약 대역(RFC 5737)은 허용한다.
+    """
+    allowed = re.compile(
+        r"^(10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|192\.0\.2\.|198\.51\.100\.|203\.0\.113\.)"
+    )
+    pattern = re.compile(r"(\d{1,3}(?:\.\d{1,3}){3}):11434")
+    grep = subprocess.run(
+        ["git", "grep", "-n", "-E", r"[0-9]{1,3}(\.[0-9]{1,3}){3}:11434"],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    offending = [
+        line
+        for line in grep.stdout.splitlines()
+        if any(not allowed.match(ip) for ip in pattern.findall(line))
+    ]
+
+    assert offending == [], "\n".join(offending)

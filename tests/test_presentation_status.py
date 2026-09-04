@@ -5,7 +5,7 @@ from app.presentation_status import get_presentation_status
 
 def settings():
     return SimpleNamespace(
-        ollama_base_url="http://16.208.81.115:11434",
+        ollama_base_url="http://203.0.113.10:11434",
         llm_model="qwen3:4b-instruct",
     )
 
@@ -35,7 +35,7 @@ def test_get_presentation_status_reports_local_model_and_ec2_endpoint(monkeypatc
     assert result["local"] == {
         "label": "Ollama + Qwen",
         "model": "qwen3:4b-instruct",
-        "endpoint": "http://16.208.81.115:11434",
+        "endpoint": "http://203.0.113.10:11434",
         "integration_status": "ok",
         "integration_message": "EC2 Ollama 엔드포인트 연결됨",
     }

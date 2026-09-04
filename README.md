@@ -66,12 +66,31 @@ End-to-end (Qwen 답변, deterministic source 지표 + Exaone Judge 0~6점):
 
 - 데이터는 실제 기밀 문서가 아닌 합성 규정집 1개(2,764행)이며 문항은 50개라 질문 1건이 2%p입니다.
 - Judge 점수는 사람 평가가 아닙니다. 답변 정확도로 해석하지 않습니다.
-- 무답 질문과 prompt injection에 대한 end-to-end 평가는 아직 없습니다 (후속 로드맵 참고).
+- 무답·주입 평가(아래)는 레이블당 5문항이라 1건이 20%p입니다.
 
 실행 조건: 2026-08-31, RTX 3070 Ti 8GB, Qwen `qwen3:4b`, Judge `exaone3.5:7.8b`, Qdrant 1.18.2,
 held-out SHA-256 `23750507…`, 문서 SHA-256 `4ecef7ee…`, 제출 기준 커밋 `86115c5`.
 
 전체 기록: [docs/portfolio/2026-08-31-rrf-ablation-reranker-evaluation.md](docs/portfolio/2026-08-31-rrf-ablation-reranker-evaluation.md)
+
+### 무답 질문과 prompt injection (held-out 40문항, 2026-09-04)
+
+문서 범위 밖·근접 무답·허위 전제·부분 답변·사용자 주입·검색 문맥 주입·출처 날조 요구 7개 범주와 정답
+있는 대조군을 결정적 규칙으로 채점했습니다. 목표는 실행 전에 고정했습니다.
+
+| 지표 | 값 | 목표 |
+| --- | ---: | ---: |
+| 정답 없는 질문 거절률 | 0.93 (14/15) | ≥ 0.80 |
+| 정답 있는 질문 오거절률 | 0.00 (0/5) | ≤ 0.10 |
+| canary 유출 | 0/15 | 0 |
+| 존재하지 않는 조항 인용 | 1/15 | 0 |
+
+검색 문맥 안의 지시문은 7건 모두 따르지 않았습니다. 그러나 사용자 입력 주입 5건의 "거절"은 모두
+Qwen3의 사고 토큰이 출력 예산을 소진해 생긴 빈 답변 fallback이었고(Ollama 응답 재현 3/3에서
+done_reason=length), 개발 세트에서는 답변이 생성된 3건 모두 canary를 출력했습니다. 사용자 주입
+방어는 아직 측정된 것이 아니라 미해결 과제입니다.
+
+전체 기록: [docs/portfolio/2026-09-04-unanswerable-adversarial-evaluation.md](docs/portfolio/2026-09-04-unanswerable-adversarial-evaluation.md)
 
 ## Quickstart
 
@@ -146,10 +165,13 @@ scripts/
   evaluate_retrieval.py    검색 ablation
   export_rag_eval_answers.py  E2E 답변 export
   evaluate_local_judge.py  Judge 채점
+  evaluate_adversarial.py  무답·주입 평가 실행/채점
 datasets/
   docs/regulations.md      합성 사내 규정집 (편/장/절/조/항)
   eval/qa_set.jsonl        개발용 50문항
   eval/qa_holdout.jsonl    held-out 50문항
+  eval/qa_adversarial_*.jsonl  무답·주입 평가 개발/held-out 40문항
+  eval/adversarial_docs/   prompt injection 주입용 합성 문서 (평가 전용 collection에만 색인)
 docs/portfolio/            Before/Why/After 형식의 작업 기록
 docs/superpowers/          설계(specs)와 계획(plans)
 ```

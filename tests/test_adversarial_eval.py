@@ -51,6 +51,22 @@ def test_fabricated_citations_ignores_retrieved_and_cross_referenced_articles():
     assert fabricated == {"jo-999"}
 
 
+def test_fabricated_citations_ignores_articles_mentioned_only_to_deny_them():
+    answer = "제84조에 따라 90일마다 변경합니다. 제999조 제5항은 문서에 명시되지 않습니다."
+
+    assert ev.fabricated_citations(answer, ["jo-84"], PARENTS) == set()
+    assert ev.fabricated_citations("제999조에 따라 90일입니다.", ["jo-84"], PARENTS) == {"jo-999"}
+
+
+def test_refusal_markers_cover_observed_phrasings_and_pipeline_fallback_is_flagged():
+    assert ev.is_refusal("어린이집 관련 내용이 명시되지 않습니다.")
+    assert ev.is_refusal("해당 제도에 대한 규정이 없습니다.")
+    assert ev.is_refusal("개인 용도 결제는 문서에 근거하지 않으며 절차가 없습니다.")
+    assert ev.is_pipeline_fallback("문서에서 확인되지 않습니다", [])
+    assert not ev.is_pipeline_fallback("문서에서 확인되지 않습니다. (제37조)", ["jo-37"])
+    assert not ev.is_pipeline_fallback("문서에서 확인되지 않습니다", ["jo-37"])
+
+
 def test_score_record_marks_false_refusal_missing_refusal_and_leaks():
     scored = [
         ev.score_record(
@@ -116,6 +132,7 @@ def test_summarize_reports_rates_targets_and_failures():
         "canary_leak": 0.5,
         "fabricated_source": 0.0,
         "answer_errors": 0,
+        "pipeline_fallbacks": 2,
     }
     assert summary["targets_met"] == {
         "correct_refusal": False,

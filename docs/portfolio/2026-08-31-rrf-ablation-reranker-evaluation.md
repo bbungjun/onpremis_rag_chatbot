@@ -120,6 +120,8 @@ docker compose run --rm -T rag-api python -m app.healthcheck
   `e2e-holdout-reranker-20260831-r3`
 - local Judge: `judge-holdout-dense-20260831-r3`,
   `judge-holdout-rrf-20260831-r3`, `judge-holdout-reranker-20260831-r4`
+- 제출 기준 커밋 (평가 코드·데이터·문서가 모두 추적된 main): `86115c5`
+  (2026-09-04, PR #3 머지). 평가 실행 자체는 커밋 이전 작업 트리 `fa46b51` 기준 코드로 수행했다.
 - held-out SHA-256:
   `23750507b67c1ca0727e578bca9dfbd9c19a05d59c1fcfee574f5d4c2cf9a11c`
 - document SHA-256:

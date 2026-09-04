@@ -31,6 +31,10 @@ PARENT_EXPANSION_FETCH_MULTIPLIER = 4
 PROMPT_CHAR_BUDGET_RATIO = 0.95
 MIN_PROMPT_CHAR_BUDGET = 1200
 T = TypeVar("T")
+RetrievalSearch = Callable[
+    [str, list[float], dict[str, list], int, dict[str, str] | None, Settings],
+    list[dict],
+]
 logger = logging.getLogger(__name__)
 
 SYSTEM_PROMPT = f"""너는 사내 규정 문서에 근거해서만 답변하는 QA 어시스턴트다.
@@ -70,6 +74,7 @@ def answer_question(
     settings: Settings | None = None,
     progress: Callable[[str], None] | None = None,
     timing: Callable[[str, float], None] | None = None,
+    retrieval_search: RetrievalSearch | None = None,
 ) -> dict[str, Any]:
     """질문에 대해 grounded 답변 + 출처를 반환한다.
 
@@ -111,13 +116,14 @@ def answer_question(
     search_results = _run_timed(
         TIMING_LABELS[2],
         timing,
-        lambda: search_chunks(
-            active_settings.qdrant_url,
-            active_settings.qdrant_collection,
+        lambda: _run_retrieval_search(
+            retrieval_search,
+            retrieval_question,
             query_vector,
             query_sparse,
             _search_top_k_for_parent_expansion(top_k),
-            metadata_filter=metadata_filter or None,
+            metadata_filter or None,
+            active_settings,
         ),
     )
     if not search_results:
@@ -189,6 +195,34 @@ def _run_timed(
 
 def _search_top_k_for_parent_expansion(top_k: int) -> int:
     return top_k * PARENT_EXPANSION_FETCH_MULTIPLIER
+
+
+def _run_retrieval_search(
+    retrieval_search: RetrievalSearch | None,
+    retrieval_question: str,
+    dense_vector: list[float],
+    sparse_vector: dict[str, list],
+    top_k: int,
+    metadata_filter: dict[str, str] | None,
+    settings: Settings,
+) -> list[dict]:
+    if retrieval_search is not None:
+        return retrieval_search(
+            retrieval_question,
+            dense_vector,
+            sparse_vector,
+            top_k,
+            metadata_filter,
+            settings,
+        )
+    return search_chunks(
+        settings.qdrant_url,
+        settings.qdrant_collection,
+        dense_vector,
+        sparse_vector,
+        top_k,
+        metadata_filter=metadata_filter,
+    )
 
 
 def _prompt_char_budget(num_ctx: int) -> int:

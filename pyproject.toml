@@ -1,5 +1,7 @@
 [tool.ruff]
 line-length = 100
+# Ruff >= 0.16 also formats code blocks in Markdown; design/plan docs are prose.
+extend-exclude = ["*.md"]
 target-version = "py311"
 
 [tool.ruff.lint]

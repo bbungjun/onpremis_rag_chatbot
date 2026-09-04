@@ -74,3 +74,4 @@ reports/*.html
 tmp/
 .omo/
 uv.lock
+reports/adversarial-eval/

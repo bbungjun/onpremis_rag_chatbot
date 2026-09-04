@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-import re
 from collections.abc import Callable
 from dataclasses import dataclass
 from time import perf_counter
@@ -9,7 +8,7 @@ from typing import Any, TypeVar
 
 from app.config import Settings
 from app.embeddings import embed_text
-from app.question_interpreter import ELIGIBILITY_CHECK, InterpretedQuestion, interpret_question
+from app.question_interpreter import InterpretedQuestion, interpret_question
 from app.qwen_client import chat_qwen
 from app.sparse import text_to_sparse
 from app.vector_store import search_chunks
@@ -31,12 +30,6 @@ TIMING_LABELS = (
 PARENT_EXPANSION_FETCH_MULTIPLIER = 4
 PROMPT_CHAR_BUDGET_RATIO = 0.95
 MIN_PROMPT_CHAR_BUDGET = 1200
-EXAONE_MODEL_PREFIX = "exaone"
-NEGATIVE_VERDICT_MARKERS = (
-    "불가능",
-    "충족하지 못",
-    "충족하지 않",
-)
 T = TypeVar("T")
 logger = logging.getLogger(__name__)
 
@@ -161,13 +154,6 @@ def answer_question(
     if not answer:
         return _fallback_result()
 
-    answer = _polish_exaone_leave_deadline_answer(
-        answer,
-        active_settings.llm_model,
-        interpreted_question,
-        parents,
-    )
-
     return {
         "answer": answer,
         "sources": [
@@ -278,70 +264,6 @@ def _payload(result: dict) -> dict:
     if isinstance(payload, dict):
         return payload
     return {}
-
-
-def _polish_exaone_leave_deadline_answer(
-    answer: str,
-    model: str,
-    interpreted_question: InterpretedQuestion,
-    parents: list[RetrievedParent],
-) -> str:
-    if not model.lower().startswith(EXAONE_MODEL_PREFIX):
-        return answer
-    if not _is_annual_leave_deadline_question(interpreted_question):
-        return answer
-    if not any(marker in answer for marker in NEGATIVE_VERDICT_MARKERS):
-        return answer
-
-    lead_days = _lead_time_days(interpreted_question.conditions.get("lead_time", ""))
-    minimum_days = _minimum_leave_deadline_days(parents)
-    if lead_days is None or minimum_days is None or lead_days < minimum_days:
-        return answer
-
-    lead_time = interpreted_question.conditions["lead_time"]
-    logger.info(
-        "RAG_ANSWER_POLISHED model=%s rule=annual_leave_lead_time lead_days=%s minimum_days=%s",
-        model,
-        lead_days,
-        minimum_days,
-    )
-    return (
-        "문서 기준상 연차유급휴가는 사용하고자 하는 날로부터 "
-        f"최소 {minimum_days}영업일 전까지 사내 근태 시스템을 통해 신청해야 합니다. "
-        f"사용자가 제시한 {lead_time}는 {minimum_days}일 이상 남은 조건이므로, "
-        f"실제 영업일 기준으로 {minimum_days}영업일 이상 확보된다면 신청 가능합니다. "
-        "다만 주말/공휴일이 포함되어 영업일이 부족하면 기준을 충족하지 않을 수 있습니다."
-    )
-
-
-def _is_annual_leave_deadline_question(interpreted_question: InterpretedQuestion) -> bool:
-    return (
-        interpreted_question.intent == ELIGIBILITY_CHECK
-        and "연차" in interpreted_question.retrieval_question
-        and "lead_time" in interpreted_question.conditions
-    )
-
-
-def _lead_time_days(lead_time: str) -> int | None:
-    day_count = re.match(r"(\d+)일", lead_time)
-    if day_count:
-        return int(day_count.group(1))
-    if lead_time == "내일":
-        return 1
-    if lead_time in {"오늘", "당일"}:
-        return 0
-    return None
-
-
-def _minimum_leave_deadline_days(parents: list[RetrievedParent]) -> int | None:
-    text = "\n".join(parent.text for parent in parents)
-    match = re.search(r"최소\s*(\d+)\s*영업일\s*전", text)
-    if match:
-        return int(match.group(1))
-    match = re.search(r"최소\s*(\d+)\s*일\s*전", text)
-    if match:
-        return int(match.group(1))
-    return None
 
 
 def _ensure_interpreted_question(question: str | InterpretedQuestion) -> InterpretedQuestion:

@@ -73,16 +73,6 @@ held-out SHA-256 `23750507…`, 문서 SHA-256 `4ecef7ee…`, 제출 기준 커�
 
 전체 기록: [docs/portfolio/2026-08-31-rrf-ablation-reranker-evaluation.md](docs/portfolio/2026-08-31-rrf-ablation-reranker-evaluation.md)
 
-## 기여 구분
-
-2인 팀 프로젝트입니다. 커밋 이력 기준으로 구분합니다.
-
-| 영역 | 담당 |
-| --- | --- |
-| 구조 기반 parent-child 청킹, Dense+BM25 RRF 하이브리드 검색, Qdrant payload 필터, 조 단위 parent 확장 | 팀원 (hyochang) |
-| MVP 골격과 Docker/Qdrant 환경, Ollama 클라이언트, grounded prompt와 injection guard, 질문 해석 계층, Gemini/Bedrock 비교 경로, 타이밍 진단, 프레젠테이션 UI | bbungjun |
-| 평가 인프라 전체: 검색 전략 ablation, held-out 세트 설계, ranking 지표와 bootstrap CI, reranker 어댑터, 답변 export, 로컬 LLM Judge, 포트폴리오 문서 | bbungjun |
-
 ## Quickstart
 
 호스트에 Docker Desktop과 Ollama가 있어야 합니다. Ollama는 Docker 밖에서 실행합니다.

@@ -1,6 +1,9 @@
 import re
+import shutil
 import subprocess
 from pathlib import Path
+
+import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -157,6 +160,8 @@ def test_tracked_files_do_not_contain_real_public_endpoint():
         r"^(10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|192\.0\.2\.|198\.51\.100\.|203\.0\.113\.)"
     )
     pattern = re.compile(r"(\d{1,3}(?:\.\d{1,3}){3}):11434")
+    if shutil.which("git") is None or not (REPO_ROOT / ".git").exists():
+        pytest.skip("git CLI or .git directory not available (e.g. inside the Docker image)")
     grep = subprocess.run(
         ["git", "grep", "-n", "-E", r"[0-9]{1,3}(\.[0-9]{1,3}){3}:11434"],
         cwd=REPO_ROOT,

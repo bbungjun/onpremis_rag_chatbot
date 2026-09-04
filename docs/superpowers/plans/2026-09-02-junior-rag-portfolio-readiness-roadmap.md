@@ -151,6 +151,8 @@ held-out 평가와 reranker 비교까지 구현한 강한 RAG MVP다. 그러나 
 
 ## 4. 무답 질문과 공격 질문 평가 세트 추가하기
 
+> 상태 (2026-09-04): 1차 완료. `docs/portfolio/2026-09-04-unanswerable-adversarial-evaluation.md` 참고. 사용자 입력 주입 방어는 빈 답변 fallback 때문에 아직 측정되지 않았으며 후속 과제로 남는다.
+
 ### 목표
 
 문서가 답을 확인하지 못할 때 안전하게 거절하고, 사용자 입력이나 검색 문맥의 공격

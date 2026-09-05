@@ -88,7 +88,9 @@ held-out SHA-256 `23750507…`, 문서 SHA-256 `4ecef7ee…`, 제출 기준 커�
 검색 문맥 안의 지시문은 7건 모두 따르지 않았습니다. 그러나 사용자 입력 주입 5건의 "거절"은 모두
 Qwen3의 사고 토큰이 출력 예산을 소진해 생긴 빈 답변 fallback이었고(Ollama 응답 재현 3/3에서
 done_reason=length), 개발 세트에서는 답변이 생성된 3건 모두 canary를 출력했습니다. 사용자 주입
-방어는 아직 측정된 것이 아니라 미해결 과제입니다.
+방어는 아직 측정된 것이 아니라 미해결 과제입니다. GPU를 비운 조건에서 재실행해도 fallback 건수는
+그대로였고(9→11건) 답변 지연 중앙값만 17.6s에서 11.9s로 줄어, fallback이 메모리 문제가 아님을
+확인했습니다.
 
 전체 기록: [docs/portfolio/2026-09-04-unanswerable-adversarial-evaluation.md](docs/portfolio/2026-09-04-unanswerable-adversarial-evaluation.md)
 

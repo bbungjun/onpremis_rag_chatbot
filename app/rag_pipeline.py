@@ -155,6 +155,7 @@ def answer_question(
             active_settings.temperature,
             active_settings.num_ctx,
             active_settings.num_predict,
+            think=active_settings.llm_think,
         ).strip(),
     )
     if not answer:

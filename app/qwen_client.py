@@ -12,6 +12,25 @@ PROMPT_INJECTION_GUARD = (
 )
 
 
+def resolve_think(model: str, mode: str = "auto") -> bool | None:
+    """Ollama ``think`` 필드 값을 정한다. None 이면 필드를 보내지 않는다.
+
+    - on  : 항상 true (thinking 모델에서 reasoning 을 content 와 분리해 받기 위함)
+    - off : 항상 false
+    - auto: qwen3 계열 thinking 모델(-instruct 제외)만 true, 나머지는 생략
+    """
+    normalized = model.strip().lower()
+    if mode == "on":
+        return True
+    if mode == "off":
+        return False
+    if mode != "auto":
+        raise ValueError(f"think mode must be auto, on, or off, got {mode!r}")
+    if normalized.startswith("qwen3") and "instruct" not in normalized:
+        return True
+    return None
+
+
 def chat_qwen(
     base_url: str,
     model: str,
@@ -20,12 +39,14 @@ def chat_qwen(
     temperature: float,
     num_ctx: int,
     num_predict: int,
+    think: str = "auto",
 ) -> str:
     path = "/api/chat"
+    think_value = resolve_think(model, think)
     request_json = {
         "model": model,
         "stream": False,
-        "think": model.strip().lower().startswith("qwen3"),
+        **({"think": think_value} if think_value is not None else {}),
         "messages": [
             {"role": "system", "content": _system_content(system_prompt)},
             {"role": "user", "content": user_prompt},

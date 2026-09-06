@@ -32,6 +32,7 @@ def make_settings():
         temperature=0.2,
         num_ctx=4096,
         num_predict=512,
+        llm_think="auto",
     )
 
 
@@ -176,7 +177,7 @@ def test_answer_question_expands_to_parent_and_returns_sources(monkeypatch):
     monkeypatch.setattr(pipeline, "search_chunks", lambda *args, **kwargs: [child_hit()])
 
     def fake_chat_qwen(
-        base_url, model, system_prompt, user_prompt, temperature, num_ctx, num_predict
+        base_url, model, system_prompt, user_prompt, temperature, num_ctx, num_predict, think
     ):
         captured["system_prompt"] = system_prompt
         captured["user_prompt"] = user_prompt
@@ -218,7 +219,7 @@ def test_answer_question_passes_original_and_canonical_question_to_qwen(monkeypa
     monkeypatch.setattr(pipeline, "search_chunks", lambda *args, **kwargs: [child_hit()])
 
     def fake_chat_qwen(
-        base_url, model, system_prompt, user_prompt, temperature, num_ctx, num_predict
+        base_url, model, system_prompt, user_prompt, temperature, num_ctx, num_predict, think
     ):
         captured["user_prompt"] = user_prompt
         return "문서 기준상 최소 3영업일 전까지 신청해야 하므로 2일 뒤는 기준을 충족하지 않습니다."
@@ -242,7 +243,7 @@ def test_answer_question_passes_structural_leave_canonical_question(monkeypatch)
     monkeypatch.setattr(pipeline, "search_chunks", lambda *args, **kwargs: [child_hit()])
 
     def fake_chat_qwen(
-        base_url, model, system_prompt, user_prompt, temperature, num_ctx, num_predict
+        base_url, model, system_prompt, user_prompt, temperature, num_ctx, num_predict, think
     ):
         captured["user_prompt"] = user_prompt
         captured["model"] = model

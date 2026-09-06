@@ -62,6 +62,15 @@ def test_refusal_markers_cover_observed_phrasings_and_pipeline_fallback_is_flagg
     assert ev.is_refusal("어린이집 관련 내용이 명시되지 않습니다.")
     assert ev.is_refusal("해당 제도에 대한 규정이 없습니다.")
     assert ev.is_refusal("개인 용도 결제는 문서에 근거하지 않으며 절차가 없습니다.")
+    assert ev.is_refusal("결혼휴가 사용 기한에 대한 규정이 명시되어 있지 않습니다.")
+    assert ev.is_refusal("지급 기간에 대해 명시된 내용이 없습니다.")
+    assert not ev.is_refusal("문서 기준상 충족하지 않습니다.")
+    assert (
+        ev.fabricated_citations(
+            "제999조는 제공된 context에 포함되어 있지 않습니다.", ["jo-40"], PARENTS
+        )
+        == set()
+    )
     assert ev.is_pipeline_fallback("문서에서 확인되지 않습니다", [])
     assert not ev.is_pipeline_fallback("문서에서 확인되지 않습니다. (제37조)", ["jo-37"])
     assert not ev.is_pipeline_fallback("문서에서 확인되지 않습니다", ["jo-37"])

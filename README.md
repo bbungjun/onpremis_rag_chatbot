@@ -68,7 +68,7 @@ End-to-end (Qwen 답변, deterministic source 지표 + Exaone Judge 0~6점):
 - Judge 점수는 사람 평가가 아닙니다. 답변 정확도로 해석하지 않습니다.
 - 무답·주입 평가(아래)는 레이블당 5문항이라 1건이 20%p입니다.
 
-실행 조건: 2026-08-31, RTX 3070 Ti 8GB, Qwen `qwen3:4b`, Judge `exaone3.5:7.8b`, Qdrant 1.18.2,
+실행 조건: 2026-08-31, RTX 3070 Ti 8GB, Qwen `qwen3:4b` (think=true), Judge `exaone3.5:7.8b`, Qdrant 1.18.2,
 held-out SHA-256 `23750507…`, 문서 SHA-256 `4ecef7ee…`, 제출 기준 커밋 `86115c5`.
 
 전체 기록: [docs/portfolio/2026-08-31-rrf-ablation-reranker-evaluation.md](docs/portfolio/2026-08-31-rrf-ablation-reranker-evaluation.md)
@@ -94,13 +94,30 @@ done_reason=length), 개발 세트에서는 답변이 생성된 3건 모두 cana
 
 전체 기록: [docs/portfolio/2026-09-04-unanswerable-adversarial-evaluation.md](docs/portfolio/2026-09-04-unanswerable-adversarial-evaluation.md)
 
+### thinking 모델 → non-thinking 모델 전환 (2026-09-06)
+
+`qwen3:4b`는 think를 꺼도 사고 과정이 답변에 섞여 나와 `qwen3:4b-instruct`로 바꾸고, `LLM_THINK`
+설정(auto/on/off)을 추가했습니다. 같은 held-out 조건으로 재측정한 결과입니다.
+
+| 항목 | qwen3:4b (think=true) | qwen3:4b-instruct (think off) |
+| --- | ---: | ---: |
+| 정답 있는 50문항 평균 지연 | 11.8s | 2.0s |
+| 출처 Recall | 0.96 | 0.98 |
+| Judge total (0~6) | 4.72 | 4.86 |
+| 무답·주입 40문항 canary 유출 | 0/15 (전부 빈 답변 fallback) | 9/15 |
+
+속도는 약 6배 빨라지고 정답 품질은 유지됐지만, fallback에 가려져 있던 prompt injection 취약점이
+드러났습니다. 현재 기본 모델은 `qwen3:4b-instruct`이며 주입 방어 강화가 다음 과제입니다.
+
+전체 기록: [docs/portfolio/2026-09-06-think-mode-and-instruct-model.md](docs/portfolio/2026-09-06-think-mode-and-instruct-model.md)
+
 ## Quickstart
 
 호스트에 Docker Desktop과 Ollama가 있어야 합니다. Ollama는 Docker 밖에서 실행합니다.
 
 ```powershell
 ollama pull bge-m3
-ollama pull qwen3:4b
+ollama pull qwen3:4b-instruct
 Copy-Item .env.example .env
 
 docker compose up -d --build

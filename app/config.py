@@ -3,6 +3,8 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 
+THINK_MODES = ("auto", "on", "off")
+
 
 @dataclass(frozen=True)
 class Settings:
@@ -15,6 +17,7 @@ class Settings:
     temperature: float
     num_ctx: int
     num_predict: int
+    llm_think: str = "auto"
 
     @classmethod
     def from_env(cls) -> Settings:
@@ -28,6 +31,7 @@ class Settings:
             temperature=_get_float("TEMPERATURE", 0.2),
             num_ctx=_get_int("NUM_CTX", 4096),
             num_predict=_get_int("NUM_PREDICT", 512),
+            llm_think=_get_choice("LLM_THINK", "auto", THINK_MODES),
         )
 
 
@@ -54,3 +58,10 @@ def _get_float(name: str, default: float) -> float:
         return float(value)
     except ValueError as exc:
         raise ValueError(f"{name} must be a number, got {value!r}") from exc
+
+
+def _get_choice(name: str, default: str, choices: tuple[str, ...]) -> str:
+    value = _get_str(name, default).lower()
+    if value not in choices:
+        raise ValueError(f"{name} must be one of {', '.join(choices)}, got {value!r}")
+    return value

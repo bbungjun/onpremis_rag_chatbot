@@ -15,9 +15,10 @@ def test_answer_question_uses_injected_retrieval_and_returns_its_parent_source(m
         temperature=0.2,
         num_ctx=4096,
         num_predict=512,
+        llm_think="auto",
     )
     monkeypatch.setattr(rag_pipeline, "embed_text", lambda *args: [0.1])
-    monkeypatch.setattr(rag_pipeline, "chat_qwen", lambda *args: "근거 답변")
+    monkeypatch.setattr(rag_pipeline, "chat_qwen", lambda *args, **kwargs: "근거 답변")
 
     def injected(question, dense, sparse, top_k, metadata_filter, active_settings):
         captured.update(

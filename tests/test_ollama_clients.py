@@ -249,3 +249,43 @@ def test_chat_qwen_http_error_includes_response_body_and_logs_it(monkeypatch, ca
     assert "HTTP 400 response body" in message
     assert "context length exceeded" in message
     assert "context length exceeded" in caplog.text
+
+
+@pytest.mark.parametrize(
+    ("model", "mode", "expected"),
+    [
+        ("qwen3:4b", "auto", True),
+        ("qwen3:4b-instruct", "auto", None),
+        ("qwen3:4b-thinking", "auto", True),
+        ("exaone3.5:7.8b", "auto", None),
+        ("qwen3:4b-instruct", "on", True),
+        ("qwen3:4b", "off", False),
+    ],
+)
+def test_resolve_think_follows_mode_and_model_family(model, mode, expected):
+    assert qwen_module().resolve_think(model, mode) is expected
+
+
+def test_resolve_think_rejects_unknown_mode():
+    with pytest.raises(ValueError, match="think mode"):
+        qwen_module().resolve_think("qwen3:4b", "maybe")
+
+
+def test_chat_qwen_omits_think_field_for_non_thinking_model(monkeypatch):
+    calls = []
+
+    def fake_post(url, json, timeout):
+        calls.append(json)
+        return FakeResponse({"message": {"content": "10일"}})
+
+    monkeypatch.setattr(qwen_module().httpx, "post", fake_post)
+
+    qwen_module().chat_qwen(
+        "http://ollama:11434", "qwen3:4b-instruct", "sys", "user", 0.2, 4096, 512
+    )
+    qwen_module().chat_qwen(
+        "http://ollama:11434", "qwen3:4b-instruct", "sys", "user", 0.2, 4096, 512, think="off"
+    )
+
+    assert "think" not in calls[0]
+    assert calls[1]["think"] is False

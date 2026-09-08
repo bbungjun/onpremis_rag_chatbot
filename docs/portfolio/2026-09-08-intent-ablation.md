@@ -1,5 +1,10 @@
 # 고정 문맥에서 no / predicted / gold intent 답변 비교
 
+동일 검색 문맥으로 Qwen 294답변을 생성하고 EXAONE schema-v2로 294건 전부 채점했다.
+주 평가 50문항의 A/B/C 평균은 5.82/5.56/5.70점(6점 만점). 이번 단일 실행에서 intent
+지시문의 이득은 입증되지 않았다. 생성 변동과 Judge 오독을 확인했으므로 기능 제거/강화의
+확정 근거로 사용하지 않는다.
+
 ## Before / 문제
 
 현재 intent 일치율 39/98(39.8%)는 AI가 작성한 잠정 라벨에 대한 분류 지표다. 이 값만으로
@@ -76,8 +81,8 @@ docker compose up -d
 docker compose run --rm rag-api python scripts/compare_intent.py prepare --run intent-abc-20260908
 docker compose run --rm rag-api python scripts/compare_intent.py generate --run intent-abc-20260908 --ids q01,q03,q20,q30,q22,r37
 docker compose run --rm rag-api python scripts/compare_intent.py generate --run intent-abc-20260908
-docker compose run --rm rag-api python scripts/compare_intent.py judge --run intent-abc-20260908
-docker compose run --rm rag-api python scripts/compare_intent.py summary --run intent-abc-20260908
+docker compose run --rm rag-api python scripts/compare_intent.py judge --run intent-abc-20260908 --judge-run schema-v2
+docker compose run --rm rag-api python scripts/compare_intent.py summary --run intent-abc-20260908 --judge-run schema-v2
 ```
 
 6문항 18답변의 예비 실행 후 동일 설정으로 나머지를 이어서 실행한다. 예비 실행 결과를 보고
@@ -98,13 +103,113 @@ docker compose run --rm rag-api python -m app.healthcheck -> 설정 출력 성�
 스킵은 Git CLI 의존 검사와 명시적 실행 플래그가 필요한 EXAONE live test다. Judge 모델을
 직접 호출하는 실험은 이 live pytest와 별도로 기록한다.
 
+Judge 출력 형식 수정 후 전체 테스트는 333 passed, 2 skipped (6.98s)다. 추가 테스트는
+Qwen에는 JSON schema가 적용되지 않는 것과, 재채점에서 전송 코드만 바뀌는 것은 허용하되
+데이터/분류기/문맥 구성 코드가 바뀌면 거부하는 것을 검증한다.
+
 ## After / 결과
 
 Qwen 294/294 답변 생성 완료. 빈 답변, 요청 오류, length 중단 모두 0건.
 최초 EXAONE 채점은 6건 모두 JSON 검증에 실패해 중단했다. 대문자 점수 키와 JSON 밖 rationale을
 반환했기 때문이다. 실패 원문 12회는 judgments.jsonl에 보존했다. 중단 시 다음 요청 1건은
-완료 레코드가 없으며 성공으로 세지 않는다. JSON schema를 적용한 별도 채점 실행으로 이어간다.
-최종 Judge 비교 결과는 측정 완료 후 갱신한다.
+완료 레코드가 없으며 성공으로 세지 않는다. JSON schema를 적용한 별도 채점 실행을 완료했다.
+주 평가 50문항은 schema-v2에서 완전한 50개 triplet이 확보됐다. 각 평균은 동일 50문항의
+정확성+근거성+완전성(각 0..2) 합산 Judge 점수다. 사람 평가 정확도가 아니다.
+
+| 주 평가 50문항 | A | B | C |
+| --- | ---: | ---: | ---: |
+| 평균 Judge total / 6 | 5.82 | 5.56 | 5.70 |
+
+| 비교 | 평균 점수 차이 | 승 / 무 / 패 |
+| --- | ---: | ---: |
+| B - A | -0.26 | 1 / 44 / 5 |
+| C - A | -0.12 | 1 / 45 / 4 |
+| C - B | +0.14 | 5 / 42 / 3 |
+
+단일 실행에서 특화 지시문을 넣은 조건의 평균이 A보다 높지 않았다. 아래의 생성 변동과
+Judge 오류 때문에 동등성이나 A의 우월성, intent 제거의 안전성을 확정하지 않는다.
+
+점수가 갈린 주 평가 문항 전체:
+
+| ID | A / B / C | 해석상 주의 |
+| --- | --- | --- |
+| q11 | 0 / 3 / 3 | 필요한 기준 조항이 검색 문맥에서 누락; B/C 동일 입력 |
+| q26 | 6 / 4 / 6 | A/B 동일 입력인데 생성 내용 차이; intent 효과로 귀속 불가 |
+| q29 | 6 / 4 / 6 | B에서 잘못된 조 번호 등장 |
+| q32 | 6 / 3 / 6 | B/C 동일 입력인데 점수 차이 |
+| q36 | 6 / 6 / 4 | C가 질문에 없는 대상 조건을 언급하고 불필요한 부정 결론 추가 |
+| q41 | 6 / 6 / 3 | A/B의 누락을 Judge가 놓침; C도 불필요한 거절 |
+| q43 | 3 / 0 / 3 | B/C 동일 입력인데 점수 차이 |
+| q45 | 6 / 0 / 4 | B/C 답변은 매우 유사한데 Judge 점수가 크게 차이남 |
+| q46 | 6 / 6 / 4 | B/C 동일 입력인데 점수 차이 |
+
+원시 답변과 채점 이유를 대조한 에이전트 점검에서 Judge 한계도 확인했다.
+q41 A/B 답변에는 필요한 교육 시간 정보가 없는데 Judge는 시간까지 포함했다고 설명하며
+완전성 2점을 부여했다. q45 B에는 제출 기한이 명시돼 있는데 Judge는 기한을 제공하지 않았다고
+설명했다. q20 A에서도 후보에 없는 예외 설명이 포함됐다고 주장했다. 이 점검 역시 사람 평가가
+아니며, 결과는 수정하지 않고 그대로 보존했다. 현재 Judge로 작은 점수 차이를 신뢰하기 어렵다.
+
+탐색 평가 48문항도 완전한 48개 triplet을 확보했다. reference가 없는 평가여서 위 주 평가와
+합쳐 하나의 품질 점수로 보고하지 않는다.
+
+| 탐색 유형 | 문항 수 | A | B | C |
+| --- | ---: | ---: | ---: | ---: |
+| 붙여쓰기 | 12 | 6.000 | 6.000 | 5.750 |
+| 오타 | 12 | 5.750 | 5.833 | 5.583 |
+| 구어체 | 12 | 5.750 | 5.750 | 5.833 |
+| 애매 | 12 | 4.250 | 4.250 | 4.250 |
+| 탐색 전체 | 48 | 5.438 | 5.458 | 5.354 |
+
+탐색 전체 B-A는 +0.0208점(승/무/패 2/45/1), C-A는 -0.0833점(3/42/3), C-B는
+-0.1042점(1/45/2)이다. raw summary에는 반올림 전 값이 있다.
+
+주 평가에서 C-B +0.14점을 분류 개선으로 해석하면 특히 위험하다. B/C 입력이 같은 21문항에서
+점수 합 차이가 +8점이고, 라벨을 바꿔 입력이 달라진 29문항에서는 -1점(평균 -0.0345점,
+승/무/패 2/25/2)이었다. 즉 전체 +7점의 차이는 라벨 교체 효과를 뒷받침하지 않는다.
+탐색에서는 B/C 동일 입력 18문항의 점수 합 차이 0점, 변경된 30문항은 -5점이었다.
+
+최종 schema-v2: 294/294 judged, 294회 요청, 재시도 0, judge_error 0. 초기 plain JSON의
+6개 실패는 별도 이력으로 유지했다. Judge 최대 입력 2,598 tokens, 최대 출력 179 tokens였다.
+Qwen 요청 시간 합은 760.106초, schema-v2 Judge 요청 시간 합은 598.397초다. 이 합에는
+개발/도구 대기, 검색, 초기 실패한 Judge 단계 시간이 포함되지 않으므로 전체 작업시간이 아니다.
+
+한 조건이라도 6점 미만인 문항 전체는 q11/q26/q29/q32/q36/q41/q43/q45/q46,
+r09/r14/r23/r26/r37/r38/r42/r44/r45/r46/r48이다. 성공 사례만 남기지 않았다.
+
+출력 schema는 Ollama의 `format`에 correctness/groundedness/completeness(0,1,2)와
+rationale을 명시하는 방식으로 강제했다. 점수 기준과 후보 답변은 변경하지 않았다.
+[Ollama Structured Outputs](https://docs.ollama.com/capabilities/structured-outputs)
+문서의 JSON Schema 방식을 적용했다. 1차 생성 코드 전체는 커밋 `4579c92`에 남아 있다.
+새 judge_config-schema-v2.json은 전송 코드 해시, 답변 파일 해시와 설정을 기록한다.
+1차 judgments.jsonl과 schema-v2 결과는 합산하지 않는다.
+
+생성 관측값(98문항/조건, 모델 로딩 포함; latency 개선 실험으로 해석하지 않음):
+
+| 항목 | A | B | C |
+| --- | ---: | ---: | ---: |
+| 요청 성공 | 98 | 98 | 98 |
+| 평균 요청 시간(s) | 2.556 | 2.487 | 2.713 |
+| 평균 출력 토큰 | 126.43 | 125.89 | 139.58 |
+| 빈 답변 / length 중단 | 0 / 0 | 0 / 0 | 0 / 0 |
+| 거절 문구 검출 | 13 | 15 | 19 |
+| 조항 인용 미검출 | 2 | 2 | 2 |
+| 문맥에서 번호가 발견되지 않는 인용 | 1 | 4 | 1 |
+
+인용 검사는 번호 존재 여부 휴리스틱이며 번호가 맞아도 주장을 뒷받침하지 않을 수 있다.
+거절 문구 건수는 오거절 판정이 아니다. 최대 관측 생성 입력은 3,086 tokens였다.
+
+동일 입력 대조에서 A/B 68쌍 중 35쌍, B/C 39쌍 중 24쌍의 답변 문자열이 달랐다. seed가 같아도
+실행 결과는 완전히 결정적이지 않았다. 단일 실행의 작은 점수 차이를 intent에 귀속하면 안 된다.
+
+메모리 관측(peak 아님):
+
+- 실행 전 GPU 전체 2,470 MiB / 8,192 MiB, 호스트 RAM 여유 5.67 GiB.
+- Qwen /api/ps size_vram 3,178,149,969 bytes (표시 약 3.2 GB), 100% GPU.
+  생성 도중 GPU 전체 5,579~5,783 MiB, 호스트 RAM 여유 0.98 GiB 관측.
+- Qwen 해제 직후 GPU 전체 2,522 MiB, 호스트 RAM 여유 9.60 GiB.
+- EXAONE 약 5.2 GB / 100% GPU, 채점 중 GPU 전체 7,754 MiB, RAM 여유 8.79 GiB 관측.
+- 최종 완료 후 Ollama 실행 모델 목록은 비어 있으며 GPU 전체 2,692 MiB를 관측했다.
+- 다른 앱의 메모리 변화가 섞인 호스트 전체 값이므로 모델 단독 RAM 요구량으로 해석하지 않는다.
 
 ## Evidence and Limitations
 
@@ -121,3 +226,18 @@ Qwen 294/294 답변 생성 완료. 빈 답변, 요청 오류, length 중단 모�
    않고 checkpoint에서 이어서 사용한다. 메모리 스냅샷은 runtime.jsonl과 도구 실행 기록에 있다.
 7. 출처 regex와 거절 문구 검사는 휴리스틱이다. 거절 표현 검출을 오거절률로 부르지 않는다.
 8. 기존 주입 공격 세트는 이번 실험 범위에 없으며 안전성 개선을 주장하지 않는다.
+
+다음 판단에는 점수 차이가 갈린 문항의 독립 검수와 동일 입력 반복 실행이 우선 필요하다.
+이 결과를 근거로 현재 분류기나 운영 프롬프트를 변경하지 않았다.
+
+로컬 산출물 SHA-256 (`reports/local-judge/intent-ablation/intent-abc-20260908/`):
+
+```text
+contexts.jsonl:            40b4a11ffd33ff56bb0a72984f438ee67fbee3b09ba7e2f3cd35b416d6aa05f4
+answers.jsonl:             6d8ace5620a2a8a6e7c2b12aa3f19f3b745b9aa5c4bf77de89dd1d92dbd10614
+judgments-schema-v2.jsonl: 2ed58c9ba24976cba22400b284f4426647244b2d067fbde68548f808cb9e4c56
+summary-schema-v2.json:    db564c95919c040aa47c68f1f966068a54ccbdfe5f7629a8fac96a19baabee32
+```
+
+설계: [고정 문맥 실험 설계](../superpowers/specs/2026-09-08-intent-ablation-design.md).
+관련 기준선: [intent 정확도 측정](2026-09-08-intent-classification-accuracy.md).

@@ -205,3 +205,67 @@ def test_report_paths_cannot_escape_local_reports(name):
 
     with pytest.raises(ValueError):
         run_path(name)
+
+
+def test_ollama_judge_schema_is_separate_from_qwen_generation(monkeypatch):
+    import scripts.compare_intent as cli
+    from scripts.compare_intent import JUDGE_SCHEMA, chat
+
+    calls = []
+
+    class Response:
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {"done": True, "message": {"content": "{}"}}
+
+    def post(url, json, timeout):
+        calls.append(json)
+        return Response()
+
+    monkeypatch.setattr(cli.httpx, "post", post)
+    chat("http://ollama", "qwen3:4b-instruct", {}, "off")("system", "context", 42)
+    chat("http://ollama", "exaone3.5:7.8b", {}, "auto", schema=JUDGE_SCHEMA)(
+        "system", "candidate", 42
+    )
+    assert "format" not in calls[0]
+    assert calls[1]["format"] == JUDGE_SCHEMA
+    assert set(calls[1]["format"]["required"]) == {
+        "correctness",
+        "groundedness",
+        "completeness",
+        "rationale",
+    }
+    assert calls[1]["messages"][0]["role"] == "system"
+    assert calls[1]["messages"][1]["content"] == "candidate"
+
+
+def test_rejudge_allows_transport_change_but_rejects_data_change(tmp_path, monkeypatch):
+    import hashlib
+    import json
+    from dataclasses import asdict
+
+    import scripts.compare_intent as cli
+
+    (tmp_path / "contexts.jsonl").write_bytes(b"")
+    manifest = {
+        "input_sha256": {"scripts/compare_intent.py": "old", "data": "same"},
+        "contexts_sha256": hashlib.sha256(b"").hexdigest(),
+        "case_count": 0,
+        "settings": {
+            k: v
+            for k, v in asdict(settings()).items()
+            if k not in ("ollama_base_url", "qdrant_url")
+        },
+    }
+    (tmp_path / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+    monkeypatch.setattr(cli, "hashes", lambda: {"scripts/compare_intent.py": "new", "data": "same"})
+    with pytest.raises(ValueError, match="source or dataset changed"):
+        cli.verified_inputs(tmp_path, settings())
+    assert cli.verified_inputs(tmp_path, settings(), frozen_answers=True)[1] == []
+    monkeypatch.setattr(
+        cli, "hashes", lambda: {"scripts/compare_intent.py": "new", "data": "changed"}
+    )
+    with pytest.raises(ValueError, match="source or dataset changed"):
+        cli.verified_inputs(tmp_path, settings(), frozen_answers=True)

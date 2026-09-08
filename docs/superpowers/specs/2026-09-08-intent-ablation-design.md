@@ -55,3 +55,11 @@ input hashes, snapshots, durable append-only answers/judgments and JSON summary.
 finished records, refuses conflicting artifacts/configuration, and never overwrites a run.
 Do not track raw context, answers, secrets or endpoint credentials. Publish aggregate portfolio
 evidence, exact commands, failures and limitations. Existing pytest is regression evidence only.
+
+## Observed transport failure and revision
+
+Plain JSON instructions produced six failed verdicts (capitalized keys, rationale outside JSON).
+Keep those raw attempts. Version `schema-v2` enforces the four-field Ollama JSON schema with the
+same grading criteria and frozen answers. Versioned judge configs pin answer/context hashes and
+the runner hash. Rejudging may use a changed runner; dataset, interpreter, prompt builder, core
+experiment code and context snapshots still must match. Generation resume remains strict.

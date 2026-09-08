@@ -45,6 +45,17 @@ INPUTS = (
     "app/intent_ablation.py",
     "scripts/compare_intent.py",
 )
+JUDGE_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "correctness": {"type": "integer", "enum": [0, 1, 2]},
+        "groundedness": {"type": "integer", "enum": [0, 1, 2]},
+        "completeness": {"type": "integer", "enum": [0, 1, 2]},
+        "rationale": {"type": "string", "minLength": 1},
+    },
+    "required": ["correctness", "groundedness", "completeness", "rationale"],
+    "additionalProperties": False,
+}
 
 
 def run_path(name: str) -> Path:
@@ -72,7 +83,7 @@ def release(base: str, model: str) -> None:
     response.raise_for_status()
 
 
-def chat(base: str, model: str, options: dict, think: str):
+def chat(base: str, model: str, options: dict, think: str, *, schema: dict | None = None):
     def call(system: str, user: str, seed: int) -> dict:
         request = {
             "model": model,
@@ -85,6 +96,8 @@ def chat(base: str, model: str, options: dict, think: str):
             "options": {**options, "seed": seed},
         }
         thinking = resolve_think(model, think)
+        if schema is not None:
+            request["format"] = schema
         if thinking is not None:
             request["think"] = thinking
         response = httpx.post(base.rstrip("/") + "/api/chat", json=request, timeout=180)
@@ -164,9 +177,19 @@ def prepare(path: Path, settings: Settings, repeats: int) -> None:
         release(base, settings.embedding_model)
 
 
-def verified_inputs(path: Path, settings: Settings) -> tuple[dict, list]:
+def verified_inputs(
+    path: Path, settings: Settings, *, frozen_answers: bool = False
+) -> tuple[dict, list]:
     manifest = json.loads((path / "manifest.json").read_text(encoding="utf-8"))
-    if manifest["input_sha256"] != hashes():
+    current_hashes = hashes()
+    expected_hashes = dict(manifest["input_sha256"])
+    # Rejudge immutable answers with a new transport (e.g. schema) without regenerating Qwen.
+    # All datasets, interpreter, context builder and experiment-core hashes still must match.
+    # The new runner hash is recorded in each versioned judge config instead.
+    if frozen_answers:
+        current_hashes.pop("scripts/compare_intent.py")
+        expected_hashes.pop("scripts/compare_intent.py")
+    if expected_hashes != current_hashes:
         raise ValueError("source or dataset changed; use a new run")
     actual = hashlib.sha256((path / "contexts.jsonl").read_bytes()).hexdigest()
     if manifest.get("contexts_sha256") != actual:
@@ -188,13 +211,18 @@ def main(argv=None) -> int:
     parser.add_argument("--run", required=True)
     parser.add_argument("--repeats", type=int, default=1)
     parser.add_argument("--ids", help="Comma-separated pilot case IDs; omit to finish all")
+    parser.add_argument("--judge-run", default="schema-v2", help="Versioned judge output name")
     args = parser.parse_args(argv)
     path = run_path(args.run)
     settings = Settings.from_env()
     if args.stage == "prepare":
         prepare(path, settings, args.repeats)
         return 0
-    manifest, frozen = verified_inputs(path, settings)
+    run_path(args.judge_run)  # Validate the name before composing output paths.
+    judgments_path = path / f"judgments-{args.judge_run}.jsonl"
+    manifest, frozen = verified_inputs(
+        path, settings, frozen_answers=args.stage in ("judge", "summary")
+    )
     base = settings.ollama_base_url
     if args.stage == "generate":
         if not settings.llm_model.startswith("qwen"):
@@ -229,25 +257,34 @@ def main(argv=None) -> int:
             "num_predict": 768,
             "system_sha256": digest(JUDGE_SYSTEM),
             "seed": 42,
+            "format": JUDGE_SCHEMA,
+            "runner_sha256": hashes()["scripts/compare_intent.py"],
+            "answers_sha256": hashlib.sha256((path / "answers.jsonl").read_bytes()).hexdigest(),
+            "contexts_sha256": manifest["contexts_sha256"],
+            "model_catalog": get_json(base.rstrip("/") + "/api/tags"),
         }
-        config_path = path / "judge_config.json"
+        config_path = path / f"judge_config-{args.judge_run}.json"
         if config_path.exists() and json.loads(config_path.read_text()) != config:
             raise ValueError("judge settings changed")
         config_path.write_text(json.dumps(config, indent=2) + "\n", encoding="utf-8")
         call = chat(
-            base, model, {k: config[k] for k in ("temperature", "num_ctx", "num_predict")}, "auto"
+            base,
+            model,
+            {k: config[k] for k in ("temperature", "num_ctx", "num_predict")},
+            "auto",
+            schema=JUDGE_SCHEMA,
         )
         try:
             snapshot(path, base, "before_judge")
-            run_judging(frozen, path / "answers.jsonl", path / "judgments.jsonl", call)
+            run_judging(frozen, path / "answers.jsonl", judgments_path, call)
             snapshot(path, base, "after_judge")
         finally:
             release(base, model)
-    summary = paired_summary(
-        read_jsonl(path / "answers.jsonl"), read_jsonl(path / "judgments.jsonl")
-    )
+    summary = paired_summary(read_jsonl(path / "answers.jsonl"), read_jsonl(judgments_path))
     summary["expected_answers"] = len(frozen) * manifest["repeats"] * 3
-    (path / "summary.json").write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
+    (path / f"summary-{args.judge_run}.json").write_text(
+        json.dumps(summary, indent=2) + "\n", encoding="utf-8"
+    )
     print(json.dumps(summary, ensure_ascii=False, indent=2))
     return 0
 

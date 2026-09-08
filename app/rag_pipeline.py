@@ -8,25 +8,39 @@ from typing import Any, TypeVar
 
 from app.config import Settings
 from app.embeddings import embed_text
+from app.llm import LLMClient, OllamaLLM
 from app.question_interpreter import InterpretedQuestion, interpret_question
 from app.qwen_client import chat_qwen
 from app.sparse import text_to_sparse
 from app.vector_store import search_chunks
 
 FALLBACK_ANSWER = "문서에서 확인되지 않습니다"
-PROGRESS_MESSAGES = (
+_PROGRESS_TEMPLATE = (
     "[1/4] Embedding question...",
     "[2/4] Searching Qdrant (metadata filter)...",
     "[3/4] Expanding to parent articles...",
-    "[4/4] Generating answer with Qwen...",
+    "[4/4] Generating answer with {label}...",
 )
-TIMING_LABELS = (
+_TIMING_TEMPLATE = (
     "Embedding question",
     "Sparse vector",
     "Qdrant search",
     "Parent expansion",
-    "Qwen generation",
+    "{label} generation",
 )
+
+
+def _progress_messages(label: str) -> tuple[str, ...]:
+    return tuple(message.format(label=label) for message in _PROGRESS_TEMPLATE)
+
+
+def _timing_labels(label: str) -> tuple[str, ...]:
+    return tuple(message.format(label=label) for message in _TIMING_TEMPLATE)
+
+
+# 기본 경로(Ollama/Qwen)의 라벨. 기존 호출자를 위해 모듈 상수로 남겨둔다.
+PROGRESS_MESSAGES = _progress_messages(OllamaLLM.label)
+TIMING_LABELS = _timing_labels(OllamaLLM.label)
 PARENT_EXPANSION_FETCH_MULTIPLIER = 4
 PROMPT_CHAR_BUDGET_RATIO = 0.95
 MIN_PROMPT_CHAR_BUDGET = 1200
@@ -75,6 +89,7 @@ def answer_question(
     progress: Callable[[str], None] | None = None,
     timing: Callable[[str, float], None] | None = None,
     retrieval_search: RetrievalSearch | None = None,
+    llm: LLMClient | None = None,
 ) -> dict[str, Any]:
     """질문에 대해 grounded 답변 + 출처를 반환한다.
 
@@ -83,6 +98,8 @@ def answer_question(
             (jang, jo, hang_no 등)든 문서 메타데이터(department 등)든 payload 에 있는
             아무 필드나 key-value 로 넘기면 검색을 그 범위로 좁힌다. None/빈 dict 면 전체 검색.
             단일 문서·자연어 질의가 기본인 MVP 에서는 보통 생략한다.
+        llm: (선택) 생성에 쓸 LLMClient. 생략하면 settings 기준 Ollama/Qwen 을 쓴다.
+            검색·문맥 조립은 모델과 무관하므로, 모델 교체는 이 인자 하나로 끝난다.
     """
     normalized_question = question.strip()
     if not normalized_question:
@@ -95,10 +112,14 @@ def answer_question(
     interpreted_question = interpret_question(normalized_question)
     retrieval_question = interpreted_question.retrieval_question
     active_settings = settings or Settings.from_env()
+    # 기본은 온프레미스 Ollama. chat_qwen 은 호출 시점의 모듈 전역에서 조회된다.
+    client = llm or OllamaLLM.from_settings(active_settings, chat=chat_qwen)
+    progress_messages = _progress_messages(client.label)
+    timing_labels = _timing_labels(client.label)
 
-    _report_progress(progress, 0)
+    _report_progress(progress, 0, progress_messages)
     query_vector = _run_timed(
-        TIMING_LABELS[0],
+        timing_labels[0],
         timing,
         lambda: embed_text(
             active_settings.ollama_base_url,
@@ -107,14 +128,14 @@ def answer_question(
         ),
     )
     query_sparse = _run_timed(
-        TIMING_LABELS[1],
+        timing_labels[1],
         timing,
         lambda: text_to_sparse(retrieval_question),
     )
 
-    _report_progress(progress, 1)
+    _report_progress(progress, 1, progress_messages)
     search_results = _run_timed(
-        TIMING_LABELS[2],
+        timing_labels[2],
         timing,
         lambda: _run_retrieval_search(
             retrieval_search,
@@ -129,9 +150,9 @@ def answer_question(
     if not search_results:
         return _fallback_result()
 
-    _report_progress(progress, 2)
+    _report_progress(progress, 2, progress_messages)
     parents, user_prompt = _run_timed(
-        TIMING_LABELS[3],
+        timing_labels[3],
         timing,
         lambda: _build_context(
             interpreted_question,
@@ -143,20 +164,11 @@ def answer_question(
     if not parents:
         return _fallback_result()
 
-    _report_progress(progress, 3)
+    _report_progress(progress, 3, progress_messages)
     answer = _run_timed(
-        TIMING_LABELS[4],
+        timing_labels[4],
         timing,
-        lambda: chat_qwen(
-            active_settings.ollama_base_url,
-            active_settings.llm_model,
-            SYSTEM_PROMPT,
-            user_prompt,
-            active_settings.temperature,
-            active_settings.num_ctx,
-            active_settings.num_predict,
-            think=active_settings.llm_think,
-        ).strip(),
+        lambda: client.generate(SYSTEM_PROMPT, user_prompt).strip(),
     )
     if not answer:
         return _fallback_result()
@@ -174,9 +186,13 @@ def answer_question(
     }
 
 
-def _report_progress(progress: Callable[[str], None] | None, index: int) -> None:
+def _report_progress(
+    progress: Callable[[str], None] | None,
+    index: int,
+    messages: tuple[str, ...] = PROGRESS_MESSAGES,
+) -> None:
     if progress is not None:
-        progress(PROGRESS_MESSAGES[index])
+        progress(messages[index])
 
 
 def _run_timed(

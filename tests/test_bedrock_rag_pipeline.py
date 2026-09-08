@@ -38,19 +38,21 @@ def child_hit(score=0.91):
 
 def test_answer_question_with_bedrock_returns_grounded_answer(monkeypatch):
     import app.bedrock_rag_pipeline as pipeline
+    import app.rag_pipeline as retrieval
 
     settings = make_settings()
     captured = {}
 
-    monkeypatch.setattr(pipeline, "embed_text", lambda *args: [0.1, 0.2, 0.3])
-    monkeypatch.setattr(pipeline, "text_to_sparse", lambda text: {"indices": [1], "values": [1.0]})
+    # 검색·문맥 조립은 rag_pipeline 이 담당한다. bedrock 모듈은 생성기만 갈아끼운다.
+    monkeypatch.setattr(retrieval, "embed_text", lambda *args: [0.1, 0.2, 0.3])
+    monkeypatch.setattr(retrieval, "text_to_sparse", lambda text: {"indices": [1], "values": [1.0]})
 
     def fake_search_chunks(*args, **kwargs):
         captured["search_args"] = args
         captured["metadata_filter"] = kwargs.get("metadata_filter")
         return [child_hit()]
 
-    monkeypatch.setattr(pipeline, "search_chunks", fake_search_chunks)
+    monkeypatch.setattr(retrieval, "search_chunks", fake_search_chunks)
 
     def fake_chat_bedrock(*args, **kwargs):
         captured["chat_args"] = args
@@ -78,7 +80,7 @@ def test_answer_question_with_bedrock_returns_grounded_answer(monkeypatch):
         }
     ]
     assert captured["metadata_filter"] == {"department": "hr", "category": "leave"}
-    assert captured["search_args"][4] == pipeline._search_top_k_for_parent_expansion(3)
+    assert captured["search_args"][4] == retrieval._search_top_k_for_parent_expansion(3)
     assert captured["chat_args"][0] == "ap-northeast-2"
     assert captured["chat_args"][1] == "bedrock-model"
     assert "doc:leave::jo-39" in captured["chat_args"][3]
@@ -87,6 +89,7 @@ def test_answer_question_with_bedrock_returns_grounded_answer(monkeypatch):
 
 def test_answer_question_with_bedrock_falls_back_without_search_results(monkeypatch):
     import app.bedrock_rag_pipeline as pipeline
+    import app.rag_pipeline as retrieval
 
     calls = {"embed": 0, "search": 0, "chat": 0}
 
@@ -98,9 +101,9 @@ def test_answer_question_with_bedrock_falls_back_without_search_results(monkeypa
         calls["search"] += 1
         return []
 
-    monkeypatch.setattr(pipeline, "embed_text", fake_embed)
-    monkeypatch.setattr(pipeline, "text_to_sparse", lambda text: {"indices": [1], "values": [1.0]})
-    monkeypatch.setattr(pipeline, "search_chunks", fake_search)
+    monkeypatch.setattr(retrieval, "embed_text", fake_embed)
+    monkeypatch.setattr(retrieval, "text_to_sparse", lambda text: {"indices": [1], "values": [1.0]})
+    monkeypatch.setattr(retrieval, "search_chunks", fake_search)
     monkeypatch.setattr(
         pipeline,
         "chat_bedrock",
@@ -117,7 +120,7 @@ def test_answer_question_with_bedrock_falls_back_without_search_results(monkeypa
         settings=make_settings(),
     )
 
-    assert result == pipeline._fallback_result()
+    assert result == retrieval._fallback_result()
     assert calls == {"embed": 1, "search": 1, "chat": 0}
 
 

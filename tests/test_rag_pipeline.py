@@ -645,3 +645,116 @@ def test_ask_rag_cli_omits_timing_callback_by_default(monkeypatch):
 
     assert exit_code == 0
     assert captured_kwargs["timing"] is None
+
+
+# ---------------------------------------------------------------------------
+# LLM 교체 — 파이프라인은 LLMClient 인터페이스만 안다
+# ---------------------------------------------------------------------------
+def llm_module():
+    try:
+        return importlib.import_module("app.llm")
+    except ModuleNotFoundError as exc:
+        pytest.fail(f"app.llm should exist: {exc}")
+
+
+def fake_llm(answer="주입된 모델의 답변입니다.", *, label="Fake", model_name="fake-model"):
+    """LLMClient 를 구현한 테스트용 생성기. 호출 인자를 calls 에 기록한다."""
+    module = llm_module()
+
+    class _Fake(module.LLMClient):
+        def __init__(self, label_: str, model_name_: str, answer_: str) -> None:
+            self.label = label_
+            self._model_name = model_name_
+            self._answer = answer_
+            self.calls: list[tuple[str, str]] = []
+
+        @property
+        def model_name(self) -> str:
+            return self._model_name
+
+        def generate(self, system_prompt: str, user_prompt: str) -> str:
+            self.calls.append((system_prompt, user_prompt))
+            return self._answer
+
+    return _Fake(label, model_name, answer)
+
+
+def test_answer_question_uses_injected_llm_client(monkeypatch):
+    """llm 을 주입하면 Qwen 을 호출하지 않고 주입된 클라이언트로 생성한다."""
+    pipeline = rag_pipeline()
+    qwen_called = []
+
+    monkeypatch.setattr(pipeline, "embed_text", lambda *args: [0.1, 0.2, 0.3])
+    monkeypatch.setattr(pipeline, "search_chunks", lambda *args, **kwargs: [child_hit()])
+    monkeypatch.setattr(
+        pipeline, "chat_qwen", lambda *args, **kwargs: qwen_called.append(args) or "qwen"
+    )
+
+    client = fake_llm()
+    result = pipeline.answer_question(
+        "연차 신청은 며칠 전까지 해야 하나요?",
+        5,
+        settings=make_settings(),
+        llm=client,
+    )
+
+    assert result["answer"] == "주입된 모델의 답변입니다."
+    assert result["sources"][0]["chunk_id"] == "doc:reg::jo-1"
+    assert qwen_called == []
+
+    system_prompt, user_prompt = client.calls[0]
+    assert system_prompt == pipeline.SYSTEM_PROMPT
+    assert "[context]" in user_prompt
+    assert "[original_question]" in user_prompt
+
+
+def test_answer_question_labels_progress_and_timing_from_llm(monkeypatch):
+    """진행 메시지와 타이밍 라벨은 주입된 클라이언트의 label 을 따른다."""
+    pipeline = rag_pipeline()
+    messages: list[str] = []
+    timings: list[str] = []
+
+    monkeypatch.setattr(pipeline, "embed_text", lambda *args: [0.1, 0.2, 0.3])
+    monkeypatch.setattr(pipeline, "search_chunks", lambda *args, **kwargs: [child_hit()])
+
+    pipeline.answer_question(
+        "연차 신청은 며칠 전까지 해야 하나요?",
+        5,
+        settings=make_settings(),
+        llm=fake_llm(label="Gemini"),
+        progress=messages.append,
+        timing=lambda label, seconds: timings.append(label),
+    )
+
+    assert "[4/4] Generating answer with Gemini..." in messages
+    assert "Gemini generation" in timings
+    assert "Embedding question" in timings
+
+
+def test_answer_question_polish_follows_injected_model_not_settings(monkeypatch):
+    """exaone 후처리는 실제 생성 모델 기준으로 판단한다.
+
+    settings.llm_model 이 exaone 이어도, 주입된 클라이언트가 다른 모델이면 후처리하지 않는다.
+    """
+    pipeline = rag_pipeline()
+
+    monkeypatch.setattr(pipeline, "embed_text", lambda *args: [0.1, 0.2, 0.3])
+    monkeypatch.setattr(
+        pipeline,
+        "search_chunks",
+        lambda *args, **kwargs: [
+            child_hit(parent_text="제1조 (연차)\n① 연차는 최소 3영업일 전까지 신청해야 한다.")
+        ],
+    )
+
+    settings = make_settings()
+    settings.llm_model = "exaone3.5:7.8b"
+
+    result = pipeline.answer_question(
+        "4일 뒤에 연차 신청하려고 하는데 가능할까요?",
+        5,
+        settings=settings,
+        llm=fake_llm("문서 기준상 불가능합니다.", model_name="gemini-2.5-flash"),
+    )
+
+    assert result["answer"] == "문서 기준상 불가능합니다."

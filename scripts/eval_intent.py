@@ -250,10 +250,7 @@ def print_accuracy_report(report: AccuracyReport, *, list_errors: bool = False) 
     if report.by_type:
         print("type별 정확도")
         for name, stats in sorted(report.by_type.items()):
-            print(
-                f"  {name:<10} {stats.correct:>3}/{stats.total:<3} "
-                f"{stats.accuracy * 100:>6.1f}%"
-            )
+            print(f"  {name:<10} {stats.correct:>3}/{stats.total:<3} {stats.accuracy * 100:>6.1f}%")
         print()
 
     print("혼동 행렬 (expected -> predicted, 0건 생략)")

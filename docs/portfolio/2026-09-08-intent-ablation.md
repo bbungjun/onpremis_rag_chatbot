@@ -241,3 +241,8 @@ summary-schema-v2.json:    db564c95919c040aa47c68f1f966068a54ccbdfe5f7629a8fac96
 
 설계: [고정 문맥 실험 설계](../superpowers/specs/2026-09-08-intent-ablation-design.md).
 관련 기준선: [intent 정확도 측정](2026-09-08-intent-classification-accuracy.md).
+
+후속 2026-09-09: [A/B 직접 재검토와 승격 게이트](2026-09-09-intent-ab-promotion-review.md)에서
+기존 차이 문항과 동점 대조를 재검토하고 상대 기간 4문항 x 3회 보완 실험을 수행했다.
+A에 새 critical regression이 있어 기본값 승격을 보류했다. 위 EXAONE 점수는 기존 실행
+기록이며, 후속 AI 재검토/새 stress test와 같은 기준의 Before/After 수치로 합산하지 않는다.

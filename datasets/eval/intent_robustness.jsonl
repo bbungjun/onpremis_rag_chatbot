@@ -1,0 +1,48 @@
+{"id": "r01", "base_id": "q01", "type": "붙여쓰기", "question": "신입사원은입사하고며칠안에규정교육을받아야하나요?"}
+{"id": "r02", "base_id": "q10", "type": "붙여쓰기", "question": "정기주주총회는언제열리나요?"}
+{"id": "r03", "base_id": "q20", "type": "붙여쓰기", "question": "100만원이하소모품을살때는누가결재하나요?"}
+{"id": "r04", "base_id": "q31", "type": "붙여쓰기", "question": "회사를그만두려면며칠전에사직서를내야하나요?"}
+{"id": "r05", "base_id": "q37", "type": "붙여쓰기", "question": "1년동안80%이상출근한사람은연차가며칠생기나요?"}
+{"id": "r06", "base_id": "q39", "type": "붙여쓰기", "question": "월급은매달며칠에들어오나요?"}
+{"id": "r07", "base_id": "q51", "type": "붙여쓰기", "question": "법인카드로개인용도결제하면어떻게되나요?"}
+{"id": "r08", "base_id": "q64", "type": "붙여쓰기", "question": "제82조에따른출장비정산서제출기한은언제까지인가요?"}
+{"id": "r09", "base_id": "q65", "type": "붙여쓰기", "question": "회사시스템비밀번호는얼마나자주바꿔야하나요?"}
+{"id": "r10", "base_id": "q67", "type": "붙여쓰기", "question": "개인정보가유출된것같으면며칠안에신고해야하나요?"}
+{"id": "r11", "base_id": "q71", "type": "붙여쓰기", "question": "사무직직원은건강검진을몇년에한번받나요?"}
+{"id": "r12", "base_id": "q55", "type": "붙여쓰기", "question": "외부업체와계약서를쓰기전에누구한테검토받아야하나요?"}
+{"id": "r13", "base_id": "q01", "type": "오타", "question": "신입사원은 입사하고 며칠 안에 규정 교윢을 받아야 하나요?"}
+{"id": "r14", "base_id": "q10", "type": "오타", "question": "정기 주주총회는 언재 열리나요?"}
+{"id": "r15", "base_id": "q27", "type": "오타", "question": "육아휴직은 최대 몇칠까지 쓸 수 있나요?"}
+{"id": "r16", "base_id": "q31", "type": "오타", "question": "회사를 그만두려면 며칠 전에 사직서를 내야 하나여?"}
+{"id": "r17", "base_id": "q35", "type": "오타", "question": "재텍근무할 때 꼭 지켜야 하는 보안 사항이 있나요?"}
+{"id": "r18", "base_id": "q37", "type": "오타", "question": "1년 동안 80% 이상 출근한 사람은 연차가 몇칠 생기나요?"}
+{"id": "r19", "base_id": "q43", "type": "오타", "question": "퇴직금을 퇴직 전에 미리 받을 수 잇는 경우가 있나요?"}
+{"id": "r20", "base_id": "q51", "type": "오타", "question": "법인카드로 개인 용도 겨제하면 어떻게 되나요?"}
+{"id": "r21", "base_id": "q57", "type": "오타", "question": "쓰던 회사 컴퓨터를 폐기할 때 그냥 버리면 되나여?"}
+{"id": "r22", "base_id": "q64", "type": "오타", "question": "출장비 정산서 제출 기한은 언재까지인가요?"}
+{"id": "r23", "base_id": "q67", "type": "오타", "question": "개인정보가 유출된 것 같으면 며칠 안에 싱고해야 하나요?"}
+{"id": "r24", "base_id": "q73", "type": "오타", "question": "직장 내 괴롭힘을 익명으로 신고할 수 잇나요?"}
+{"id": "r25", "base_id": "q01", "type": "구어체", "question": "신입인데 규정 교육 언제까지 들어야 됨?"}
+{"id": "r26", "base_id": "q13", "type": "구어체", "question": "얼마 넘으면 이사회 통과해야 함?"}
+{"id": "r27", "base_id": "q20", "type": "구어체", "question": "소모품 100만원 밑이면 누가 사인해줌?"}
+{"id": "r28", "base_id": "q31", "type": "구어체", "question": "퇴사하려면 며칠 전에 말해야 됨?"}
+{"id": "r29", "base_id": "q37", "type": "구어체", "question": "연차 몇 개 생기는지 알려줘"}
+{"id": "r30", "base_id": "q39", "type": "구어체", "question": "월급날 언제임?"}
+{"id": "r31", "base_id": "q51", "type": "구어체", "question": "법인카드로 개인적으로 긁으면 어떻게 됨?"}
+{"id": "r32", "base_id": "q57", "type": "구어체", "question": "회사 노트북 그냥 버려도 되나"}
+{"id": "r33", "base_id": "q63", "type": "구어체", "question": "출장 가면 밥값 얼마까지 나옴?"}
+{"id": "r34", "base_id": "q64", "type": "구어체", "question": "출장비 정산 언제까지 내야 됨?"}
+{"id": "r35", "base_id": "q65", "type": "구어체", "question": "비번 얼마마다 바꿔야 함?"}
+{"id": "r36", "base_id": "q73", "type": "구어체", "question": "괴롭힘 신고 익명으로 되나"}
+{"id": "r37", "base_id": "q37", "type": "애매", "question": "연차 좀 쓰고 싶은데"}
+{"id": "r38", "base_id": "q64", "type": "애매", "question": "출장비 관련해서 궁금한 게 있어요"}
+{"id": "r39", "base_id": "q51", "type": "애매", "question": "법인카드 이거 써도 되는 건가"}
+{"id": "r40", "base_id": "q38", "type": "애매", "question": "결혼하는데 휴가 얼마나 받아요?"}
+{"id": "r41", "base_id": "q31", "type": "애매", "question": "퇴사 생각 중인데요"}
+{"id": "r42", "base_id": "q43", "type": "애매", "question": "퇴직금 관련 질문이요"}
+{"id": "r43", "base_id": "q35", "type": "애매", "question": "재택 보안 그거 뭐죠"}
+{"id": "r44", "base_id": "q67", "type": "애매", "question": "개인정보 유출된 것 같은데"}
+{"id": "r45", "base_id": "q73", "type": "애매", "question": "팀장님 때문에 힘든데 어디다 말해야 하죠"}
+{"id": "r46", "base_id": "q45", "type": "애매", "question": "애 학자금 되나요"}
+{"id": "r47", "base_id": "q57", "type": "애매", "question": "컴퓨터 바꿔야 하는데"}
+{"id": "r48", "base_id": "q20", "type": "애매", "question": "소모품 사려는데요"}

@@ -32,6 +32,43 @@ GENERATOR_FILES = (
 )
 
 
+def require_reviews(path: Path) -> list:
+    """검토 기록을 읽는다. 파일이 없거나 비어 있으면 실패한다.
+
+    read_jsonl 은 없는 파일에 빈 리스트를 돌려주므로, 그대로 쓰면 "파일을 지웠다"와
+    "검토했는데 문제가 없었다"가 구분되지 않는다. 게이트의 판정 근거가 되는 입력이므로
+    조용히 비는 것을 허용하지 않는다.
+    """
+    if not path.exists():
+        raise FileNotFoundError(f"review file is required: {path}")
+    rows = read_jsonl(path)
+    if not rows:
+        raise ValueError(f"no review records in {path}")
+    return rows
+
+
+def verify_input_equal(rows: list, contexts: list) -> None:
+    """검토자가 적은 input_equal 을 봉인된 프롬프트로 검산한다.
+
+    input_equal 은 승패를 집계할지 결정하는 유일한 스위치다. 두 arm 의 프롬프트가 같은데
+    다르다고 적으면, 실행 변동일 뿐인 차이가 지시문의 효과로 집계된다. 프롬프트는
+    contexts.jsonl 에 해시 검증된 채로 있으므로 사람 입력을 믿지 않고 직접 비교한다.
+    """
+    frozen = {
+        item["case"]["id"]: item["prompts"]["no_intent"] == item["prompts"]["predicted_intent"]
+        for item in contexts
+    }
+    for row in rows:
+        case_id = row["case_id"]
+        if case_id not in frozen:
+            raise ValueError(f"review refers to a case outside the frozen contexts: {case_id}")
+        if bool(row["input_equal"]) != frozen[case_id]:
+            raise ValueError(
+                f"input_equal disagrees with the frozen prompts for {case_id}: "
+                f"review says {row['input_equal']}, prompts say {frozen[case_id]}"
+            )
+
+
 def promotion_gate(history: list, boundary: list, expected: set, *, confirmation=False) -> dict:
     new_critical = []
     wins = losses = both_fail = 0
@@ -135,6 +172,11 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("stage", choices=("prepare", "generate", "gate"))
     parser.add_argument("--run", required=True)
+    parser.add_argument(
+        "--confirmed-by",
+        default=None,
+        help="대표성 있는 독립 확인의 출처. 주면 승격 조건 3을 충족한 것으로 기록한다.",
+    )
     args = parser.parse_args(argv)
     if not args.run or any(c not in "abcdefghijklmnopqrstuvwxyz0123456789-_" for c in args.run):
         parser.error("invalid run name")
@@ -146,13 +188,25 @@ def main(argv=None):
             source.resolve().relative_to(Path("reports/local-judge").resolve())
             if hashlib.sha256(source.read_bytes()).hexdigest() != expected_hash:
                 raise ValueError("reviewed artifact changed")
-        contexts = read_jsonl(path / "contexts.jsonl")
-        expected = {(x["case"]["id"], r) for x in contexts for r in range(3)}
+        # 기대 명단을 만드는 contexts.jsonl 자체가 봉인 밖에 있으면 검토자가 명단을 줄여
+        # 완전성 검사를 통과시킬 수 있다. generate 단계와 같은 기준으로 검증한다.
+        manifest = json.loads((path / "manifest.json").read_text(encoding="utf-8"))
+        contexts_path = path / "contexts.jsonl"
+        if hashlib.sha256(contexts_path.read_bytes()).hexdigest() != manifest["contexts_sha256"]:
+            raise ValueError("frozen context changed")
+        contexts = read_jsonl(contexts_path)
+        boundary = require_reviews(path / "boundary-review.jsonl")
+        verify_input_equal(boundary, contexts)
+        expected = {
+            (x["case"]["id"], r) for x in contexts for r in range(manifest["repeats"])
+        }
         result = promotion_gate(
-            read_jsonl(path / "historical-review.jsonl"),
-            read_jsonl(path / "boundary-review.jsonl"),
+            require_reviews(path / "historical-review.jsonl"),
+            boundary,
             expected,
+            confirmation=bool(args.confirmed_by),
         )
+        result["confirmed_by"] = args.confirmed_by
         (path / "promotion.json").write_text(json.dumps(result, indent=2), encoding="utf-8")
         print(json.dumps(result, ensure_ascii=False, indent=2))
         return 0
@@ -216,7 +270,7 @@ def main(argv=None):
                 read_jsonl(path / "contexts.jsonl"),
                 path / "answers.jsonl",
                 chat(base, settings.llm_model, options, settings.llm_think),
-                repeats=3,
+                repeats=meta["repeats"],
             )
             snapshot(path, base, "after_generation")
         finally:

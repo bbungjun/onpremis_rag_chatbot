@@ -277,23 +277,25 @@ def _expand_to_parents(search_results: list[dict], top_k: int) -> list[Retrieved
     """검색된 child(항)를 parent(조) 단위로 환원한다.
 
     각 child payload 에는 조 전체 본문이 parent_text 로 denormalize 되어 있으므로,
-    parent_id 기준으로 중복을 제거하고 첫 등장(최고 점수) 순서로 상위 top_k 개의 조를 모은다.
+    문서 ID와 parent_id 기준으로 중복을 제거하고 첫 등장(최고 점수) 순서로 조를 모은다.
     """
     parents: list[RetrievedParent] = []
-    seen: set[str] = set()
+    seen: set[tuple[str, str]] = set()
     for result in search_results:
         payload = _payload(result)
         parent_id = payload.get("parent_id") or payload.get("chunk_id")
         if not isinstance(parent_id, str) or not parent_id.strip():
             continue
-        if parent_id in seen:
+        document_id = str(payload.get("document_id") or payload.get("source_path") or "")
+        parent_key = (document_id, parent_id)
+        if parent_key in seen:
             continue
 
         text = payload.get("parent_text") or payload.get("text")
         if not isinstance(text, str) or not text.strip():
             continue
 
-        seen.add(parent_id)
+        seen.add(parent_key)
         parents.append(
             RetrievedParent(
                 chunk_id=parent_id,

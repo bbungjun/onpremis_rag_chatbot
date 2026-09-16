@@ -1,0 +1,15 @@
+.git/
+.worktrees/
+.venv/
+venv/
+tmp/
+reports/
+output/
+storage/
+qdrant_storage/
+__pycache__/
+.pytest_cache/
+.env
+.env.*
+*.sqlite
+*.sqlite3

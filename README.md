@@ -12,7 +12,7 @@
 ## 아키텍처
 
 ```text
-구조화 마크다운 규정집 (편/장/절/조/항)
+구조화 마크다운 또는 HWP 5.0 규정집 (HWP는 로컬에서 구조화 Markdown으로 추출)
 -> 구조 기반 parent-child 청킹  (child = 항, parent = 조)
 -> child 임베딩: dense(bge-m3, Ollama) + sparse(BM25, kiwipiepy 형태소)
 -> Qdrant 하이브리드 검색 (dense + BM25, RRF 결합) + payload 메타데이터 필터
@@ -29,6 +29,12 @@
 - Dense와 BM25를 점수가 아니라 순위로 결합(RRF)해 서로 다른 점수 체계를 정규화 없이 합칩니다.
 - 출처는 LLM이 쓰는 문자열이 아니라 파이프라인이 실제로 검색한 조 목록입니다.
 - Ollama/Qwen은 Docker 밖 호스트에서 실행하고, 컨테이너는 `host.docker.internal:11434`로 접근합니다.
+
+## 대규모 HWP 실험
+
+`scripts/generate_hwp_corpus.py`는 포맷 수집과 부하 시험에 사용할 합성 HWP 규정을 생성합니다.
+기본 1,000개 파일은 실제 회사 규정이 아니며, 기존 평가 결과에 포함되지 않았습니다.
+HWP 생성, 구조 검증, 배치 색인 절차와 평가 한계는 [대규모 HWP 코퍼스 안내](docs/HWP_LARGE_CORPUS.md)에 기록했습니다.
 
 ## 평가 결과
 

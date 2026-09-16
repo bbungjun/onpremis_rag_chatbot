@@ -75,3 +75,5 @@ tmp/
 .omo/
 uv.lock
 reports/adversarial-eval/
+reports/hwp-large-corpus/
+output/

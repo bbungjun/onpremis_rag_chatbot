@@ -55,6 +55,23 @@ def child_hit(score=0.91, *, parent_id="doc:reg::jo-1", parent_text=None, **over
     return {"score": score, "payload": payload}
 
 
+def test_parent_expansion_keeps_same_article_number_from_different_documents():
+    pipeline = rag_pipeline()
+    results = [
+        child_hit(parent_id="jo-1", document_id="doc:a", source_path="a.hwp"),
+        child_hit(
+            parent_id="jo-1",
+            document_id="doc:b",
+            source_path="b.hwp",
+            parent_text="제1조 (다른 규정)\n① 출장비는 5일 이내에 정산한다.",
+        ),
+    ]
+
+    parents = pipeline._expand_to_parents(results, top_k=2)
+
+    assert [parent.source_path for parent in parents] == ["a.hwp", "b.hwp"]
+
+
 @pytest.mark.parametrize("question", ["", "   "])
 def test_answer_question_rejects_empty_question(question):
     pipeline = rag_pipeline()

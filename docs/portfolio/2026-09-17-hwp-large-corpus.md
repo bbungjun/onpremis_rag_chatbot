@@ -47,6 +47,7 @@
 ## 증거와 한계
 
 - 설계: `docs/superpowers/specs/2026-09-17-hwp-large-corpus-design.md`; 구현 계획: `docs/superpowers/plans/2026-09-17-hwp-large-corpus-implementation.md`.
+- 구현 커밋: [`3d9332d`](https://github.com/bbungjun/onpremis_rag_chatbot/commit/3d9332d); 검토 PR: [#14](https://github.com/bbungjun/onpremis_rag_chatbot/pull/14).
 - 로컬 원시 산출물: `reports/hwp-large-corpus/run-1000/manifest.jsonl`, `qa_generated_dev.jsonl`, `docs/`, `source_md/`. Git에는 포함하지 않는다.
 - manifest SHA-256: `79207ad31672b0fc33880a154d9ba1130bd8c9dcb7e7a4cb5a3403a195ee19d4`.
 - 압축 산출물: `output/hwp-large-corpus-1000.zip`, 31,092,905바이트, SHA-256 `98a31e7222495222a82cbde8bde7d7569529d670d92992dc3df1c2660ff44e5f`.

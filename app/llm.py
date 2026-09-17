@@ -1,6 +1,6 @@
 """생성 모델 경계.
 
-RAG 파이프라인은 구체적인 모델(Qwen/Gemini/Bedrock)을 알지 않는다.
+RAG 파이프라인은 구체적인 모델(Qwen/Gemini)을 알지 않는다.
 `LLMClient` 하나만 알고, 실제 HTTP/SDK 호출은 각 구현체가 담당한다.
 따라서 모델을 추가하거나 바꿔도 검색·문맥 조립 코드는 건드리지 않는다.
 
@@ -14,7 +14,6 @@ from abc import ABC, abstractmethod
 from collections.abc import Callable
 from typing import Any
 
-from app.bedrock_client import chat_bedrock
 from app.gemini_client import chat_gemini_vertex
 from app.qwen_client import chat_qwen
 
@@ -131,39 +130,4 @@ class GeminiLLM(LLMClient):
             self._temperature,
             self._max_output_tokens,
             self._thinking_budget,
-        )
-
-
-class BedrockLLM(LLMClient):
-    """AWS Bedrock 으로 생성한다. 비교·평가용 개발 보조 경로."""
-
-    label = "Bedrock"
-
-    def __init__(
-        self,
-        *,
-        region: str,
-        model_id: str,
-        temperature: float,
-        max_output_tokens: int,
-        chat: Callable[..., str] | None = None,
-    ) -> None:
-        self._region = region
-        self._model_id = model_id
-        self._temperature = temperature
-        self._max_output_tokens = max_output_tokens
-        self._chat = chat or chat_bedrock
-
-    @property
-    def model_name(self) -> str:
-        return self._model_id
-
-    def generate(self, system_prompt: str, user_prompt: str) -> str:
-        return self._chat(
-            self._region,
-            self._model_id,
-            system_prompt,
-            user_prompt,
-            self._temperature,
-            self._max_output_tokens,
         )

@@ -22,7 +22,6 @@ services:
       - .:/app
       - rag_storage:/app/storage
       - ${GOOGLE_APPLICATION_CREDENTIALS_HOST_PATH:-./config/google-application-credentials.placeholder.json}:/run/secrets/google-application-credentials.json:ro
-      - ${AWS_CONFIG_HOST_DIR:-~/.aws}:/root/.aws:ro
     working_dir: /app
     command: uvicorn app.server:app --host 0.0.0.0 --port 8000 --reload
 

@@ -89,17 +89,17 @@ def test_make_app_returns_runtime_status(tmp_path):
                 "integration_message": "EC2 Ollama endpoint reachable",
             },
             "api": {
-                "label": "AWS Bedrock",
-                "model": env["BEDROCK_MODEL_ID"],
-                "region": env["BEDROCK_REGION"],
+                "label": "Vertex Gemini",
+                "model": env["GEMINI_MODEL"],
+                "location": env["GOOGLE_CLOUD_LOCATION"],
                 "integration_status": "ok",
-                "integration_message": "AWS credentials detected",
+                "integration_message": "Gemini project configured",
             },
         },
         env={
-            "BEDROCK_REGION": "ap-northeast-2",
-            "BEDROCK_MODEL_ID": "anthropic.claude-3-5-sonnet-20240620-v1:0",
-            "BEDROCK_MODEL_LABEL": "AWS Bedrock",
+            "GOOGLE_CLOUD_PROJECT": "demo-project",
+            "GOOGLE_CLOUD_LOCATION": "us-central1",
+            "GEMINI_MODEL": "gemini-2.5-flash",
         },
     )
 
@@ -109,7 +109,7 @@ def test_make_app_returns_runtime_status(tmp_path):
     assert status.startswith("200")
     assert headers["Content-Type"] == "application/json; charset=utf-8"
     assert payload["local"]["model"] == "qwen3:4b-instruct"
-    assert payload["api"]["model"] == "anthropic.claude-3-5-sonnet-20240620-v1:0"
+    assert payload["api"]["model"] == "gemini-2.5-flash"
 
 
 def test_make_app_runs_live_compare_with_stable_response_contract(tmp_path):
@@ -133,9 +133,9 @@ def test_make_app_runs_live_compare_with_stable_response_contract(tmp_path):
         settings_factory=lambda: SimpleNamespace(retrieval_top_k=3, num_predict=192),
         compare=fake_compare,
         env={
-            "BEDROCK_REGION": "ap-northeast-2",
-            "BEDROCK_MODEL_ID": "bedrock-model",
-            "BEDROCK_MODEL_LABEL": "AWS Bedrock",
+            "GOOGLE_CLOUD_PROJECT": "demo-project",
+            "GOOGLE_CLOUD_LOCATION": "us-central1",
+            "GEMINI_MODEL": "gemini-2.5-flash",
         },
     )
     body = json.dumps({"question": "연차 신청은?", "filters": {"department": "hr"}}).encode()
@@ -174,9 +174,9 @@ def test_make_app_passes_selected_local_model_to_compare(tmp_path):
         settings_factory=lambda: SimpleNamespace(retrieval_top_k=3, num_predict=192),
         compare=fake_compare,
         env={
-            "BEDROCK_REGION": "ap-northeast-2",
-            "BEDROCK_MODEL_ID": "",
-            "BEDROCK_MODEL_LABEL": "AWS Bedrock",
+            "GOOGLE_CLOUD_PROJECT": "",
+            "GOOGLE_CLOUD_LOCATION": "us-central1",
+            "GEMINI_MODEL": "gemini-2.5-flash",
         },
     )
     body = json.dumps(
@@ -228,9 +228,9 @@ def test_presentation_server_serves_page_while_compare_request_is_running(tmp_pa
         settings_factory=lambda: SimpleNamespace(retrieval_top_k=3, num_predict=192),
         compare=fake_compare,
         env={
-            "BEDROCK_REGION": "ap-northeast-2",
-            "BEDROCK_MODEL_ID": "",
-            "BEDROCK_MODEL_LABEL": "AWS Bedrock",
+            "GOOGLE_CLOUD_PROJECT": "",
+            "GOOGLE_CLOUD_LOCATION": "us-central1",
+            "GEMINI_MODEL": "gemini-2.5-flash",
         },
     )
     server = make_server(

@@ -135,7 +135,7 @@ Sources:
 - datasets/docs/regulations.md#jo-39 (score: 0.5)
 ```
 
-상세 설정, 문제 해결, Gemini/Bedrock 비교 경로, 발표용 프론트엔드는 [docs/LOCAL_SETUP.md](docs/LOCAL_SETUP.md)에 있습니다.
+상세 설정, 문제 해결, Gemini 비교 경로, 발표용 프론트엔드는 [docs/LOCAL_SETUP.md](docs/LOCAL_SETUP.md)에 있습니다.
 
 ## 평가 재현
 

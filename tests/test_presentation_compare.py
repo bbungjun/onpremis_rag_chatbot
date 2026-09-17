@@ -7,125 +7,84 @@ def settings():
     return SimpleNamespace(retrieval_top_k=3, num_predict=192, llm_model="qwen3:4b-instruct")
 
 
-def test_compare_question_returns_both_results_with_stable_contract():
-    def local_answer(*args, **kwargs):
-        return {
-            "answer": "연차는 3영업일 전까지 신청해야 합니다.",
-            "sources": [{"source_path": "a.md", "chunk_id": "chunk-a", "score": 0.9}],
-        }
+def answer():
+    return {
+        "answer": "연차는 3영업일 전까지 신청해야 합니다.",
+        "sources": [{"source_path": "a.md", "chunk_id": "chunk-a", "score": 0.9}],
+    }
 
-    def api_answer(*args, **kwargs):
-        return {
-            "answer": "연차는 사용 예정일 3영업일 전까지 신청해야 합니다.",
-            "sources": [{"source_path": "a.md", "chunk_id": "chunk-a", "score": 0.9}],
-        }
+
+def test_compare_question_uses_existing_gemini_path():
+    seen = {}
+
+    def gemini_answer(*args, **kwargs):
+        seen.update(kwargs)
+        return answer()
 
     result = compare_question(
         "연차 신청은 며칠 전까지 해야 하나요?",
         {"department": "hr", "category": "leave"},
         settings=settings(),
-        bedrock_region="ap-northeast-2",
-        bedrock_model_id="bedrock-model",
-        bedrock_model_label="AWS Bedrock",
-        local_answer=local_answer,
-        bedrock_answer=api_answer,
+        gemini_project="demo-project",
+        gemini_location="us-central1",
+        gemini_model="gemini-2.5-flash",
+        local_answer=lambda *args, **kwargs: answer(),
+        gemini_answer=gemini_answer,
     )
 
     assert set(result) == {"question", "filters", "local", "api", "shared_sources"}
-    assert result["question"] == "연차 신청은 며칠 전까지 해야 하나요?"
-    assert result["filters"] == {
-        "doc_type": None,
-        "department": "hr",
-        "category": "leave",
-        "security_level": None,
-        "source_path": None,
-    }
     assert result["local"]["status"] == "ok"
-    assert result["local"]["model"] == "qwen3:4b-instruct"
-    assert result["local"]["integration_status"] == "ok"
-    assert result["local"]["integration_message"] == "qwen3:4b-instruct 응답 성공"
-    assert result["api"]["status"] == "ok"
-    assert result["api"]["label"] == "AWS Bedrock"
-    assert result["api"]["model"] == "bedrock-model"
-    assert result["api"]["integration_status"] == "ok"
-    assert result["api"]["integration_message"] == "Bedrock 응답 성공"
-    assert result["shared_sources"][0]["chunk_id"] == "chunk-a"
+    assert result["api"]["label"] == "Vertex Gemini"
+    assert result["api"]["model"] == "gemini-2.5-flash"
+    assert result["shared_sources"] == answer()["sources"]
+    assert seen["project"] == "demo-project"
+    assert seen["location"] == "us-central1"
+    assert seen["model"] == "gemini-2.5-flash"
+    assert seen["max_output_tokens"] == 192
 
 
-def test_compare_question_uses_selected_local_model_for_one_request():
+def test_compare_question_uses_selected_local_model():
     base_settings = settings()
     seen_models = []
 
     def local_answer(*args, **kwargs):
         seen_models.append(kwargs["settings"].llm_model)
-        return {
-            "answer": "연차는 3영업일 전까지 신청해야 합니다.",
-            "sources": [{"source_path": "a.md", "chunk_id": "chunk-a", "score": 0.9}],
-        }
+        return answer()
 
     result = compare_question(
-        "연차 신청은 며칠 전까지 해야 하나요?",
-        {"department": "hr", "category": "leave"},
+        "재택근무 승인 절차는 어떻게 되나요?",
+        {},
         settings=base_settings,
-        bedrock_region="ap-northeast-2",
-        bedrock_model_id="",
-        bedrock_model_label="AWS Bedrock",
+        gemini_project="",
+        gemini_location="us-central1",
+        gemini_model="gemini-2.5-flash",
         local_model="exaone3.5:7.8b",
         local_answer=local_answer,
-        bedrock_answer=lambda *args, **kwargs: {},
+        gemini_answer=lambda *args, **kwargs: {},
     )
 
     assert seen_models == ["exaone3.5:7.8b"]
     assert result["local"]["model"] == "exaone3.5:7.8b"
     assert base_settings.llm_model == "qwen3:4b-instruct"
+    assert result["api"]["status"] == "pending"
+    assert result["api"]["answer"] == "Gemini project가 아직 설정되지 않았습니다."
 
 
-def test_compare_question_preserves_partial_failure():
-    def local_answer(*args, **kwargs):
-        return {"answer": "로컬 답변", "sources": []}
-
-    def api_answer(*args, **kwargs):
-        raise RuntimeError("missing AWS credentials")
+def test_compare_question_preserves_partial_gemini_failure():
+    def failed_gemini(*args, **kwargs):
+        raise RuntimeError("Gemini request failed")
 
     result = compare_question(
-        "재택근무 승인 절차는 어떻게 되나요?",
+        "경비 처리에 필요한 증빙은 무엇인가요?",
         {},
         settings=settings(),
-        bedrock_region="ap-northeast-2",
-        bedrock_model_id="bedrock-model",
-        bedrock_model_label="AWS Bedrock",
-        local_answer=local_answer,
-        bedrock_answer=api_answer,
+        gemini_project="demo-project",
+        gemini_location="us-central1",
+        gemini_model="gemini-2.5-flash",
+        local_answer=lambda *args, **kwargs: answer(),
+        gemini_answer=failed_gemini,
     )
 
     assert result["local"]["status"] == "ok"
     assert result["api"]["status"] == "error"
-    assert result["api"]["integration_status"] == "error"
-    assert result["api"]["model"] == "bedrock-model"
-    assert "missing AWS credentials" in result["api"]["error"]
-
-
-def test_compare_question_reports_unconfigured_bedrock_as_pending():
-    def local_answer(*args, **kwargs):
-        return {"answer": "로컬 답변", "sources": []}
-
-    def api_answer(*args, **kwargs):
-        raise AssertionError("Bedrock should not be called without a model id")
-
-    result = compare_question(
-        "재택근무 승인 절차는 어떻게 되나요?",
-        {},
-        settings=settings(),
-        bedrock_region="ap-northeast-2",
-        bedrock_model_id="",
-        bedrock_model_label="AWS Bedrock",
-        local_answer=local_answer,
-        bedrock_answer=api_answer,
-    )
-
-    assert result["api"]["status"] == "pending"
-    assert result["api"]["integration_status"] == "pending"
-    assert result["api"]["model"] == "미설정"
-    assert result["api"]["integration_message"] == "Bedrock 모델 미설정"
-    assert result["api"]["answer"] == "Bedrock 모델이 아직 설정되지 않았습니다."
-    assert result["api"]["sources"] == []
+    assert "Gemini request failed" in result["api"]["error"]

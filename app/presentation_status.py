@@ -4,7 +4,6 @@ from typing import Any
 
 import httpx
 
-from app.bedrock_client import has_bedrock_credentials
 from app.config import Settings
 
 
@@ -50,35 +49,22 @@ def _local_status(settings: Settings) -> dict[str, Any]:
 
 
 def _api_status(env: dict[str, str]) -> dict[str, Any]:
-    model_id = env.get("BEDROCK_MODEL_ID", "").strip()
-    region = env.get("BEDROCK_REGION", "ap-northeast-2").strip() or "ap-northeast-2"
-    label = env.get("BEDROCK_MODEL_LABEL", "AWS Bedrock").strip() or "AWS Bedrock"
+    project = (env.get("GOOGLE_CLOUD_PROJECT") or env.get("GCP_PROJECT_ID") or "").strip()
+    model = env.get("GEMINI_MODEL", "gemini-2.5-flash").strip() or "gemini-2.5-flash"
+    location = env.get("GOOGLE_CLOUD_LOCATION", "us-central1").strip() or "us-central1"
     base = {
-        "label": label,
-        "model": model_id or "미설정",
-        "region": region,
+        "label": "Vertex Gemini",
+        "model": model,
+        "location": location,
     }
-    if not model_id:
+    if not project:
         return {
             **base,
             "integration_status": "pending",
-            "integration_message": "Bedrock 모델 미설정",
+            "integration_message": "Gemini project 미설정",
         }
-    try:
-        if has_bedrock_credentials():
-            return {
-                **base,
-                "integration_status": "ok",
-                "integration_message": "AWS credentials detected",
-            }
-        return {
-            **base,
-            "integration_status": "error",
-            "integration_message": "AWS credentials were not found",
-        }
-    except Exception as exc:
-        return {
-            **base,
-            "integration_status": "error",
-            "integration_message": f"AWS credential check failed: {exc}",
-        }
+    return {
+        **base,
+        "integration_status": "ok",
+        "integration_message": "Gemini project configured; connection checked on request",
+    }

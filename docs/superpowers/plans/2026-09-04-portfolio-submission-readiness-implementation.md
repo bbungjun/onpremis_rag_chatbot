@@ -242,7 +242,7 @@ Phase 1 완료 조건:
      - docs/portfolio/ 링크
 5. 내가 한 일 / 팀원이 한 일 (커밋 이력 기준으로 정직하게)
      - 팀원: 구조 기반 청킹, Dense+BM25 RRF, Qdrant payload 필터, parent 확장
-     - 본인: MVP 골격과 Docker 환경, 질문 해석 계층, 모델 비교(Gemini/Bedrock),
+     - 본인: MVP 골격과 Docker 환경, 질문 해석 계층, 모델 비교(Gemini),
        타이밍 진단, 프레젠테이션 UI, 평가 인프라 전체(retrieval ablation, holdout,
        local judge, reranker 비교)
 6. Quickstart (Docker compose up, ingest, ask 3개 명령만)

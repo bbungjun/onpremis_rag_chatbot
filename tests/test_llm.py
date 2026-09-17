@@ -171,44 +171,8 @@ def test_gemini_llm_passes_arguments_in_client_order():
     }
 
 
-def test_bedrock_llm_passes_arguments_in_client_order():
-    module = llm_module()
-    captured = {}
-
-    def fake_chat(region, model_id, system_prompt, user_prompt, temperature, max_output_tokens):
-        captured.update(
-            region=region,
-            model_id=model_id,
-            system_prompt=system_prompt,
-            user_prompt=user_prompt,
-            temperature=temperature,
-            max_output_tokens=max_output_tokens,
-        )
-        return "bedrock answer"
-
-    client = module.BedrockLLM(
-        region="ap-northeast-2",
-        model_id="bedrock-model",
-        temperature=0.2,
-        max_output_tokens=256,
-        chat=fake_chat,
-    )
-
-    assert client.label == "Bedrock"
-    assert client.model_name == "bedrock-model"
-    assert client.generate("SYS", "USER") == "bedrock answer"
-    assert captured == {
-        "region": "ap-northeast-2",
-        "model_id": "bedrock-model",
-        "system_prompt": "SYS",
-        "user_prompt": "USER",
-        "temperature": 0.2,
-        "max_output_tokens": 256,
-    }
-
-
 def test_every_builtin_client_satisfies_the_interface():
-    """구현체 3종은 모두 LLMClient 로 취급될 수 있어야 한다."""
+    """구현체 2종은 모두 LLMClient 로 취급될 수 있어야 한다."""
     module = llm_module()
     clients = (
         module.OllamaLLM.from_settings(make_settings(), chat=lambda *args: ""),
@@ -219,13 +183,6 @@ def test_every_builtin_client_satisfies_the_interface():
             temperature=0.1,
             max_output_tokens=1,
             thinking_budget=None,
-            chat=lambda *args: "",
-        ),
-        module.BedrockLLM(
-            region="r",
-            model_id="m",
-            temperature=0.1,
-            max_output_tokens=1,
             chat=lambda *args: "",
         ),
     )

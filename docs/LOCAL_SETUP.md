@@ -238,8 +238,8 @@ Never commit the ADC file; mount it read-only.
 
 ## Presentation Split Chat Frontend
 
-Side-by-side view: local Ollama + Qwen RAG on the left, AWS Bedrock RAG on the right. Stored demo
-results work without AWS credentials; the live-run button needs AWS credentials and `BEDROCK_MODEL_ID`.
+Side-by-side view: local Ollama + Qwen RAG on the left, Vertex Gemini RAG on the right. Demo
+questions load without cloud credentials; live Gemini requests need a Google Cloud project and ADC.
 
 ```powershell
 docker compose run --rm -p 8787:8787 rag-api python scripts/presentation_frontend.py --host 0.0.0.0 --port 8787

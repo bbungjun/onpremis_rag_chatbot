@@ -15,69 +15,30 @@ def valid_case() -> dict:
         "id": "leave-advance",
         "question": "연차 신청은 며칠 전까지 해야 하나요?",
         "filters": {"department": "hr", "category": "leave"},
-        "takeaway": "같은 문서 근거를 쓰면 두 모델 답변의 핵심이 일치합니다.",
-        "shared_sources": [
-            {
-                "source_path": "datasets/docs/hr/leave-policy.md",
-                "chunk_id": "doc:datasets/docs/hr/leave-policy.md:chunk:0000",
-                "score": 0.91,
-            }
-        ],
-        "local": {
-            "label": "Ollama + Qwen",
-            "answer": "연차는 사용 예정일 3영업일 전까지 신청해야 합니다.",
-            "generation_seconds": 28.7,
-            "sources": [
-                {
-                    "source_path": "datasets/docs/hr/leave-policy.md",
-                    "chunk_id": "doc:datasets/docs/hr/leave-policy.md:chunk:0000",
-                    "score": 0.91,
-                }
-            ],
-        },
-        "api": {
-            "label": "AWS Bedrock",
-            "answer": "연차는 사용 예정일 기준 3영업일 전까지 신청하는 것이 원칙입니다.",
-            "generation_seconds": 2.4,
-            "sources": [
-                {
-                    "source_path": "datasets/docs/hr/leave-policy.md",
-                    "chunk_id": "doc:datasets/docs/hr/leave-policy.md:chunk:0000",
-                    "score": 0.91,
-                }
-            ],
-        },
     }
 
 
-def test_load_demo_cases_returns_cases(tmp_path):
+def test_load_demo_cases_returns_question_only_cases(tmp_path):
     path = tmp_path / "demo_cases.json"
     write_cases(path, [valid_case()])
 
     payload = load_demo_cases(path)
 
-    assert payload["cases"][0]["id"] == "leave-advance"
-    assert payload["cases"][0]["question"] == "연차 신청은 며칠 전까지 해야 하나요?"
-    assert payload["cases"][0]["local"]["sources"][0]["chunk_id"].endswith("chunk:0000")
+    assert payload["cases"] == [valid_case()]
 
 
-def test_load_demo_cases_rejects_answer_without_sources(tmp_path):
+def test_load_demo_cases_rejects_missing_filters(tmp_path):
     case = valid_case()
-    case["api"]["sources"] = []
+    del case["filters"]
     path = tmp_path / "demo_cases.json"
     write_cases(path, [case])
 
-    with pytest.raises(ValueError, match="sources"):
+    with pytest.raises(ValueError, match="filters"):
         load_demo_cases(path)
 
 
-def test_load_demo_cases_allows_fallback_without_sources(tmp_path):
-    case = valid_case()
-    case["api"]["answer"] = "문서에서 확인되지 않습니다"
-    case["api"]["sources"] = []
-    path = tmp_path / "demo_cases.json"
-    write_cases(path, [case])
+def test_repository_cases_contain_questions_without_stored_model_answers():
+    cases = load_demo_cases()["cases"]
 
-    payload = load_demo_cases(path)
-
-    assert payload["cases"][0]["api"]["sources"] == []
+    assert cases
+    assert all(set(case) == {"id", "question", "filters"} for case in cases)

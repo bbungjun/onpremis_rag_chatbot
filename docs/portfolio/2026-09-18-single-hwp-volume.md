@@ -45,6 +45,7 @@ Qdrant는 원본 HWP 파일을 검색 단위로 저장하지 않고 child 벡터
 ## 증거와 한계
 
 - 설계: `docs/superpowers/specs/2026-09-18-single-hwp-volume-design.md`; 계획: `docs/superpowers/plans/2026-09-18-single-hwp-volume-implementation.md`.
+- 구현 커밋: [`a39f1c4`](https://github.com/bbungjun/onpremis_rag_chatbot/commit/a39f1c4); 검토 PR: [#14](https://github.com/bbungjun/onpremis_rag_chatbot/pull/14).
 - 로컬 원시 결과: `reports/hwp-large-corpus/book-1000/docs/synthetic-regulations-1000.hwp`, `source_md/`, `manifest.jsonl`, `qa_generated_dev.jsonl`. 생성 결과는 Git에 포함하지 않는다.
 - HWP SHA-256: `c21b51d7191ca7d58df5d7141b7da50f6bfab3a1d28a80301009da732ad0de0a`; manifest SHA-256: `550b457236ba0c62edf9b48bb5b59d015be68cf2b7083a6f9a66cce300498644`; 원본 Markdown SHA-256: `12ef5904d881632e0d27fcaf959302c54437448ed9af014ee814d7c72853552b`.
 - 도구/환경: `hwp-cli` v0.17.0, Windows, Python 3.11, Intel Core i5-13600KF, RAM 31.8 GiB, 2026-09-18 (Asia/Seoul). 모델은 실행하지 않았다.

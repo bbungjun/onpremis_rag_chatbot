@@ -37,5 +37,6 @@
 ## 증거와 한계
 
 - 설계: `docs/superpowers/specs/2026-09-18-retire-unused-aws-generation-design.md`; 계획: `docs/superpowers/plans/2026-09-18-retire-unused-aws-generation-implementation.md`.
+- 구현 커밋: [`e9c29e1`](https://github.com/bbungjun/onpremis_rag_chatbot/commit/e9c29e1); 검토 PR: [#15](https://github.com/bbungjun/onpremis_rag_chatbot/pull/15).
 - 기준선: `origin/main` (`d8ec28a`), Windows Python 3.11, 2026-09-18 (Asia/Seoul).
 - Qwen/Gemini 실제 API 호출과 Docker 컨테이너 구동은 별도 런타임 조건이 필요하다. 이 작업의 테스트는 계약·로컬 동작을 확인한 것이다.

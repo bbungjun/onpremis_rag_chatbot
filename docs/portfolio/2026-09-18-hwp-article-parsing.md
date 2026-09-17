@@ -23,6 +23,7 @@
 | 자동화 | Windows Python 3.11, `PYTHONUTF8=1`, `HWP_CLI_PATH` 설정 후 `python -m pytest -q`: **321 passed, 1 skipped** (6.61초). 기준선(최신 main 병합 직후)은 314 passed, 1 skipped였다. 테스트 증가분은 검증 범위이지 품질 지표가 아니다. |
 | 큰 합성 HWP | `reports/hwp-large-corpus/book-1000/docs/synthetic-regulations-1000.hwp`를 다시 읽어 8,000개 parent, 24,000개 child, 32,000개 고유 청크 ID를 확인했다. 생성 개발 질문 1,000개의 대상 조에 기대 답변 문구가 모두 있었다. |
 | 정적 검사 | `ruff check --output-format=github .`, `ruff format --check .`, `docker compose config --quiet`, `git diff --check` 통과. |
+| PR CI | [GitHub Actions 실행 35260029023](https://github.com/bbungjun/onpremis_rag_chatbot/actions/runs/35260029023)에서 lint와 test가 모두 통과했다(커밋 `c697c26`). |
 | Docker 런타임 | `docker compose up -d`, `docker compose run --rm rag-api pytest -v`, `curl.exe --max-time 5 http://localhost:6333`, `docker compose run --rm rag-api python -m app.healthcheck`를 시도했다. Docker Desktop Linux 엔진 named pipe가 없어 컨테이너와 Qdrant가 실행되지 않았다. |
 
 ## After / 관찰 결과

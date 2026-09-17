@@ -23,7 +23,8 @@ Qdrant는 원본 HWP 파일을 검색 단위로 저장하지 않고 child 벡터
 | --- | --- |
 | 실패 재현 | 동일 파일에 두 개의 `제1조`를 넣으면 기존 청커가 parent/child ID를 중복 생성했다. 수정 후 두 parent와 두 child의 ID가 모두 고유했다. |
 | 작은 실제 HWP | 2개 정책을 한 HWP로 생성·재추출하여 16개 조, 48개 항과 마지막 `제16조`를 확인했다. |
-| 전체 Python 테스트 | Windows Python 3.11, `PYTHONUTF8=1`, `HWP_CLI_PATH` 설정, `python -m pytest -q`: **324 passed, 1 skipped** (6.24초). |
+| 전체 Python 테스트 | Windows Python 3.11, `PYTHONUTF8=1`, `HWP_CLI_PATH` 설정, `python -m pytest -q`: **324 passed, 1 skipped** (최종 실행 7.52초). |
+| Ruff | 첫 PR CI lint에서 긴 줄 2개(E501)와 반복 변수 클로저(B023) 1개가 실패했다. 수정 후 로컬 `ruff check --output-format=github .` 통과. |
 | 단일 HWP 생성 | `python scripts/generate_hwp_corpus.py --layout book --count 1000 --output reports/hwp-large-corpus/book-1000 --hwp-cli <hwp.exe>` 성공. HWP CLI 유효성 검사와 재추출 후 10개 편, 200개 장, 1,000개 절, 8,000개 조, 24,000개 항, 32,000개 고유 청크 ID를 확인했다. |
 | 생성 질문 매핑 | 개발 질문 1,000개가 서로 다른 대상 조를 가리키고, 모든 기대 답변 문구가 해당 조에 있었다(1,000/1,000). 이는 독립 검색 평가가 아니다. |
 | 육안 검사 | HWP 첫 페이지 PNG에 편/장/절/조/항과 한글 본문이 표시되는 것을 확인했다. 렌더러의 글꼴 대체가 발생하여 한컴오피스 화면과의 동일성은 평가하지 않았다. |

@@ -86,7 +86,8 @@ def make_policy(index: int) -> GeneratedPolicy:
         f"## 제1장 {scope} 기준",
         "### 제1절 공통 절차",
         "**제1조 (목적)**",
-        "① 이 문서는 가상회사 대규모 검색 실험을 위한 합성 테스트 문서이며 실제 사내 규정이 아니다.",
+        "① 이 문서는 가상회사 대규모 검색 실험을 위한 합성 테스트 문서이며 "
+        "실제 사내 규정이 아니다.",
         f"② 문서 식별자는 {policy_id}이고 적용 주제는 {theme.title}이다.",
         f"③ {scope}에 관한 {theme.action} 절차를 정한다.",
         "**제2조 (적용 범위)**",
@@ -161,21 +162,25 @@ def make_regulation_book(count: int) -> GeneratedBook:
         policy = make_policy(policy_index)
         article_offset = position * 8
 
-        def renumber(value: str) -> str:
-            return _ARTICLE_REF.sub(
-                lambda match: f"제{article_offset + int(match.group(1))}조", value
-            )
-
-        blocks.extend(renumber(block) for block in policy.markdown.strip().split("\n\n")[3:])
+        blocks.extend(
+            _renumber_article_refs(block, article_offset)
+            for block in policy.markdown.strip().split("\n\n")[3:]
+        )
         questions.append({
             "question": policy.question,
-            "expected_answer": renumber(policy.answer),
+            "expected_answer": _renumber_article_refs(policy.answer, article_offset),
             "expected_chunk_id": f"jo-{article_offset + 3}",
             "policy_id": policy.policy_id,
             "kind": "generated-development-only",
         })
 
     return GeneratedBook("\n\n".join(blocks) + "\n", questions, count)
+
+
+def _renumber_article_refs(value: str, offset: int) -> str:
+    return _ARTICLE_REF.sub(
+        lambda match: f"제{offset + int(match.group(1))}조", value
+    )
 
 
 def generate_book(count: int, output: Path, *, hwp_cli: str) -> dict:
@@ -288,7 +293,10 @@ def generate_corpus(count: int, output: Path, *, hwp_cli: str) -> dict:
         parents = sum(chunk["type"] == "parent" for chunk in chunks)
         children = sum(chunk["type"] == "child" for chunk in chunks)
         if (parents, children) != (8, 24):
-            raise ValueError(f"HWP 구조 손실: {policy.filename}: parent={parents}, child={children}")
+            raise ValueError(
+                f"HWP 구조 손실: {policy.filename}: "
+                f"parent={parents}, child={children}"
+            )
         total_children += children
         manifest.append({
             "policy_id": policy.policy_id,

@@ -40,10 +40,26 @@ THEMES = (
 )
 
 UNITS = (
-    "서울본부", "부산본부", "대전본부", "광주본부", "대구본부",
-    "인천본부", "수원센터", "성남센터", "울산센터", "창원센터",
-    "연구개발본부", "제품본부", "고객지원본부", "운영본부", "물류본부",
-    "해외사업본부", "영업본부", "품질관리본부", "플랫폼본부", "서비스본부",
+    "서울본부",
+    "부산본부",
+    "대전본부",
+    "광주본부",
+    "대구본부",
+    "인천본부",
+    "수원센터",
+    "성남센터",
+    "울산센터",
+    "창원센터",
+    "연구개발본부",
+    "제품본부",
+    "고객지원본부",
+    "운영본부",
+    "물류본부",
+    "해외사업본부",
+    "영업본부",
+    "품질관리본부",
+    "플랫폼본부",
+    "서비스본부",
 )
 ROLES = ("정규직", "계약직", "파견직", "인턴", "관리자")
 
@@ -156,9 +172,7 @@ def make_regulation_book(count: int) -> GeneratedBook:
         blocks.append(f"### 제{role_no + 1}절 {ROLES[role_no]} 적용")
         previous_theme, previous_unit = theme_no, unit_no
 
-        policy_index = (
-            theme_no + len(THEMES) * unit_no + len(THEMES) * len(UNITS) * role_no
-        )
+        policy_index = theme_no + len(THEMES) * unit_no + len(THEMES) * len(UNITS) * role_no
         policy = make_policy(policy_index)
         article_offset = position * 8
 
@@ -166,21 +180,21 @@ def make_regulation_book(count: int) -> GeneratedBook:
             _renumber_article_refs(block, article_offset)
             for block in policy.markdown.strip().split("\n\n")[3:]
         )
-        questions.append({
-            "question": policy.question,
-            "expected_answer": _renumber_article_refs(policy.answer, article_offset),
-            "expected_chunk_id": f"jo-{article_offset + 3}",
-            "policy_id": policy.policy_id,
-            "kind": "generated-development-only",
-        })
+        questions.append(
+            {
+                "question": policy.question,
+                "expected_answer": _renumber_article_refs(policy.answer, article_offset),
+                "expected_chunk_id": f"jo-{article_offset + 3}",
+                "policy_id": policy.policy_id,
+                "kind": "generated-development-only",
+            }
+        )
 
     return GeneratedBook("\n\n".join(blocks) + "\n", questions, count)
 
 
 def _renumber_article_refs(value: str, offset: int) -> str:
-    return _ARTICLE_REF.sub(
-        lambda match: f"제{offset + int(match.group(1))}조", value
-    )
+    return _ARTICLE_REF.sub(lambda match: f"제{offset + int(match.group(1))}조", value)
 
 
 def generate_book(count: int, output: Path, *, hwp_cli: str) -> dict:
@@ -225,7 +239,8 @@ def generate_book(count: int, output: Path, *, hwp_cli: str) -> dict:
         "\n".join(
             json.dumps({**question, "source_path": source_path}, ensure_ascii=False)
             for question in book.questions
-        ) + "\n",
+        )
+        + "\n",
         encoding="utf-8",
     )
     return {
@@ -294,28 +309,31 @@ def generate_corpus(count: int, output: Path, *, hwp_cli: str) -> dict:
         children = sum(chunk["type"] == "child" for chunk in chunks)
         if (parents, children) != (8, 24):
             raise ValueError(
-                f"HWP 구조 손실: {policy.filename}: "
-                f"parent={parents}, child={children}"
+                f"HWP 구조 손실: {policy.filename}: parent={parents}, child={children}"
             )
         total_children += children
-        manifest.append({
-            "policy_id": policy.policy_id,
-            "path": hwp_path.relative_to(output).as_posix(),
-            "bytes": hwp_path.stat().st_size,
-            "sha256": hashlib.sha256(hwp_path.read_bytes()).hexdigest(),
-            "parent_chunks": parents,
-            "child_chunks": children,
-            "theme": policy.theme,
-            "unit": policy.unit,
-            "role": policy.role,
-        })
+        manifest.append(
+            {
+                "policy_id": policy.policy_id,
+                "path": hwp_path.relative_to(output).as_posix(),
+                "bytes": hwp_path.stat().st_size,
+                "sha256": hashlib.sha256(hwp_path.read_bytes()).hexdigest(),
+                "parent_chunks": parents,
+                "child_chunks": children,
+                "theme": policy.theme,
+                "unit": policy.unit,
+                "role": policy.role,
+            }
+        )
         source_path = _source_ref(hwp_path)
-        qa.append({
-            "question": policy.question,
-            "expected_answer": policy.answer,
-            "source_path": source_path,
-            "kind": "generated-development-only",
-        })
+        qa.append(
+            {
+                "question": policy.question,
+                "expected_answer": policy.answer,
+                "source_path": source_path,
+                "kind": "generated-development-only",
+            }
+        )
 
     (output / "manifest.jsonl").write_text(
         "\n".join(json.dumps(item, ensure_ascii=False) for item in manifest) + "\n",

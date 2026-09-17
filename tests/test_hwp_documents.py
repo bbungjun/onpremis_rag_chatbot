@@ -37,9 +37,7 @@ def test_hwp_reader_preserves_regulation_structure(monkeypatch, tmp_path):
     assert "### 제1절 연차\n" in text
     chunks = importlib.import_module("app.chunking").chunk_text(text)
     assert [chunk["type"] for chunk in chunks] == ["parent", "child", "child"]
-    assert chunks[1]["metadata"]["path"] == (
-        "제1편 인사 > 제1장 휴가 > 제1절 연차 > 제1조"
-    )
+    assert chunks[1]["metadata"]["path"] == ("제1편 인사 > 제1장 휴가 > 제1절 연차 > 제1조")
     assert calls[0][0] == ["hwp-test", "cat", str(source), "--format", "markdown"]
     assert calls[0][1]["shell"] is False
 
@@ -192,9 +190,7 @@ def test_two_policy_book_roundtrips_as_one_real_hwp(tmp_path):
     assert result["policies"] == 2
     assert result["parent_chunks"] == 16
     assert result["child_chunks"] == 48
-    text = importlib.import_module("app.document_reader").read_document(
-        hwp_files[0], hwp_cli=cli
-    )
+    text = importlib.import_module("app.document_reader").read_document(hwp_files[0], hwp_cli=cli)
     assert "제16조" in text
 
 
@@ -211,9 +207,7 @@ def test_real_hwp_fixture_roundtrip_preserves_articles_and_paragraphs():
     assert "SYN-POL-00001" in text
 
 
-def test_two_hwp_files_flow_through_ingestion_with_distinct_point_ids(
-    tmp_path, monkeypatch
-):
+def test_two_hwp_files_flow_through_ingestion_with_distinct_point_ids(tmp_path, monkeypatch):
     cli = os.environ.get("HWP_CLI_PATH") or shutil.which("hwp")
     if not cli:
         pytest.skip("HWP CLI is unavailable on this host")
@@ -242,16 +236,12 @@ def test_two_hwp_files_flow_through_ingestion_with_distinct_point_ids(
 
     result = ingest.ingest_directory(docs, settings=settings, batch_size=7)
 
-    assert (result.documents_indexed, result.chunks_created, result.vectors_inserted) == (
-        2, 64, 48
-    )
+    assert (result.documents_indexed, result.chunks_created, result.vectors_inserted) == (2, 64, 48)
     assert len({point["id"] for point in uploaded}) == 48
     assert {point["payload"]["title"] for point in uploaded} == {"a.hwp", "b.hwp"}
 
 
-def test_one_book_with_repeated_article_numbers_keeps_both_parent_texts(
-    tmp_path, monkeypatch
-):
+def test_one_book_with_repeated_article_numbers_keeps_both_parent_texts(tmp_path, monkeypatch):
     ingest = importlib.import_module("scripts.ingest_md")
     (tmp_path / "book.md").write_text(
         "# 제1편 인사\n**제1조 (연차)**\n① 연차는 3일 전에 신청한다.\n"

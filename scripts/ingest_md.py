@@ -35,7 +35,8 @@ def discover_markdown_files(root_path: str | Path) -> list[Path]:
 def discover_source_files(root_path: str | Path) -> list[Path]:
     root = Path(root_path)
     return sorted(
-        path for path in root.rglob("*")
+        path
+        for path in root.rglob("*")
         if path.is_file() and path.suffix.lower() in {".md", ".hwp"}
     )
 

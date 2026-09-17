@@ -249,9 +249,7 @@ def test_ingest_cli_passes_reset_flag(monkeypatch):
     monkeypatch.setattr(
         ingest,
         "ingest_directory",
-        lambda docs_path, reset=False, batch_size=128: calls.append(
-            (docs_path, reset, batch_size)
-        ),
+        lambda docs_path, reset=False, batch_size=128: calls.append((docs_path, reset, batch_size)),
     )
 
     assert ingest.main(["datasets/docs", "--reset"]) == 0

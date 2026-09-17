@@ -34,6 +34,7 @@
 ## 증거와 한계
 
 - 설계: `docs/superpowers/specs/2026-09-18-hwp-article-parsing-design.md`; 계획: `docs/superpowers/plans/2026-09-18-hwp-article-parsing-implementation.md`.
+- 구현 커밋: [`a51fcb1`](https://github.com/bbungjun/onpremis_rag_chatbot/commit/a51fcb1); 검토 PR: [#14](https://github.com/bbungjun/onpremis_rag_chatbot/pull/14).
 - fixture: `tests/fixtures/collapsed_article.hwp`(11,264바이트, SHA-256 `59622f728ec62225795f42ba601d0198f8aa3b6f1b5ef04c954b4dd6850c2c19`), `tests/fixtures/softbreak_multiple_articles.hwp`(11,264바이트, SHA-256 `a07494ca7f3a174117c54f4f714bc518f2a8e15d68716706e1cbd666e826252e`). HWP CLI v0.17.0으로 생성했다.
 - 생성 문서와 fixture 모두 같은 CLI로 작성·추출했다. 독립 HWP 구현 및 실제 회사 문서와의 상호 운용성은 미검증이다. 굵은 조 제목이 일반 본문에서 인용되거나, 조 제목이 서식만으로 표현되고 텍스트 표지가 없는 경우에는 잘못 분리하거나 누락할 수 있다. 표·각주·이미지 OCR·페이지 좌표는 이번 범위 밖이다.
 - 호스트: Windows, Intel Core i5-13600KF, RAM 31.8 GiB. 실행 날짜 2026-09-18 (Asia/Seoul). 모델과 검색 top-k는 이 파싱 검증에서 실행하지 않았다.

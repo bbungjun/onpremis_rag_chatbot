@@ -55,6 +55,72 @@ def test_hwp_reader_rejects_unstructured_extraction(monkeypatch, tmp_path):
         reader.read_document(source, hwp_cli="hwp-test")
 
 
+def test_hwp_reader_splits_article_and_hangs_on_one_line(monkeypatch, tmp_path):
+    reader = importlib.import_module("app.document_reader")
+    source = tmp_path / "collapsed.hwp"
+    source.write_bytes(b"fixture")
+    extracted = (
+        "# **1. 제1편 인사**\n\n"
+        "**제1조 (연차 신청)** ① 연차는 3영업일 전에 신청한다. "
+        "② 팀장은 다음 영업일까지 승인한다.\n"
+    )
+    monkeypatch.setattr(
+        reader.subprocess,
+        "run",
+        lambda args, **kwargs: subprocess.CompletedProcess(args, 0, extracted, ""),
+    )
+
+    chunks = importlib.import_module("app.chunking").chunk_text(
+        reader.read_document(source, hwp_cli="hwp-test")
+    )
+
+    assert [chunk["type"] for chunk in chunks] == ["parent", "child", "child"]
+    assert "3영업일" in chunks[1]["text"]
+    assert "승인한다" in chunks[2]["text"]
+
+
+def test_hwp_reader_keeps_article_branch_number(monkeypatch, tmp_path):
+    reader = importlib.import_module("app.document_reader")
+    source = tmp_path / "branch.hwp"
+    source.write_bytes(b"fixture")
+    extracted = (
+        "**제5조 (연차)**\n\n① 연차는 사전에 신청한다.\n\n"
+        "**제5조의2 (긴급 예외)**\n\n① 긴급한 사유는 사후 보고한다.\n"
+    )
+    monkeypatch.setattr(
+        reader.subprocess,
+        "run",
+        lambda args, **kwargs: subprocess.CompletedProcess(args, 0, extracted, ""),
+    )
+
+    chunks = importlib.import_module("app.chunking").chunk_text(
+        reader.read_document(source, hwp_cli="hwp-test")
+    )
+
+    assert [chunk["id"] for chunk in chunks if chunk["type"] == "parent"] == [
+        "jo-5",
+        "jo-5-sub-2",
+    ]
+
+
+def test_hwp_reader_rejects_partial_article_loss(monkeypatch, tmp_path):
+    reader = importlib.import_module("app.document_reader")
+    source = tmp_path / "partial.hwp"
+    source.write_bytes(b"fixture")
+    extracted = (
+        "**제1조 (연차)**\n\n① 연차는 사전에 신청한다.\n\n"
+        "**제2조 (출장비)**: ① 출장비는 5일 이내에 정산한다.\n"
+    )
+    monkeypatch.setattr(
+        reader.subprocess,
+        "run",
+        lambda args, **kwargs: subprocess.CompletedProcess(args, 0, extracted, ""),
+    )
+
+    with pytest.raises(ValueError, match="조 제목 수"):
+        reader.read_document(source, hwp_cli="hwp-test")
+
+
 def test_ingest_mixed_documents_uploads_bounded_batches(tmp_path, monkeypatch):
     ingest = importlib.import_module("scripts.ingest_md")
     docs = tmp_path / "docs"
@@ -205,6 +271,38 @@ def test_real_hwp_fixture_roundtrip_preserves_articles_and_paragraphs():
     assert sum(chunk["type"] == "parent" for chunk in chunks) == 8
     assert sum(chunk["type"] == "child" for chunk in chunks) == 24
     assert "SYN-POL-00001" in text
+
+
+def test_real_hwp_fixture_splits_collapsed_article_and_hangs():
+    cli = os.environ.get("HWP_CLI_PATH") or shutil.which("hwp")
+    if not cli:
+        pytest.skip("HWP CLI is unavailable on this host")
+    reader = importlib.import_module("app.document_reader")
+    source = Path(__file__).parent / "fixtures" / "collapsed_article.hwp"
+    chunks = importlib.import_module("app.chunking").chunk_text(
+        reader.read_document(source, hwp_cli=cli)
+    )
+
+    assert [chunk["type"] for chunk in chunks] == ["parent", "child", "child"]
+    assert "3영업일" in chunks[1]["text"]
+    assert "승인한다" in chunks[2]["text"]
+
+
+def test_real_hwp_fixture_preserves_two_articles_in_one_paragraph():
+    cli = os.environ.get("HWP_CLI_PATH") or shutil.which("hwp")
+    if not cli:
+        pytest.skip("HWP CLI is unavailable on this host")
+    reader = importlib.import_module("app.document_reader")
+    source = Path(__file__).parent / "fixtures" / "softbreak_multiple_articles.hwp"
+    chunks = importlib.import_module("app.chunking").chunk_text(
+        reader.read_document(source, hwp_cli=cli)
+    )
+
+    parents = [chunk for chunk in chunks if chunk["type"] == "parent"]
+    children = [chunk for chunk in chunks if chunk["type"] == "child"]
+    assert [chunk["id"] for chunk in parents] == ["jo-5", "jo-5-sub-2"]
+    assert [chunk["parent_id"] for chunk in children] == ["jo-5", "jo-5-sub-2"]
+    assert "사후 보고" in children[1]["text"]
 
 
 def test_two_hwp_files_flow_through_ingestion_with_distinct_point_ids(tmp_path, monkeypatch):

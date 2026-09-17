@@ -113,6 +113,25 @@ def test_repeated_article_numbers_in_one_book_keep_distinct_parent_ids():
     assert children[1]["parent_id"] == parents[1]["id"]
 
 
+def test_article_with_branch_number_is_a_distinct_source():
+    document = """# 제1편 인사
+**제5조 (연차)**
+① 연차는 사전에 신청한다.
+**제5조의2 (긴급 예외)**
+① 긴급한 사유는 사후 보고한다.
+"""
+
+    chunks = chunk_text(document)
+    parents = [chunk for chunk in chunks if chunk["type"] == "parent"]
+    children = [chunk for chunk in chunks if chunk["type"] == "child"]
+
+    assert [parent["id"] for parent in parents] == ["jo-5", "jo-5-sub-2"]
+    assert [child["parent_id"] for child in children] == ["jo-5", "jo-5-sub-2"]
+    assert parents[1]["metadata"]["jo"] == "제5조의2"
+    assert parents[1]["metadata"]["jo_no"] == 5
+    assert parents[1]["metadata"]["jo_sub_no"] == 2
+
+
 def test_table_summary_prepends_column_header_line():
     text = "앞 문장\n| 구분 | 금액 |\n| --- | --- |\n| 부서장 | 100만원 |\n뒤 문장"
 

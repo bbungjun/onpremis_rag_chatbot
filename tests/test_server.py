@@ -37,6 +37,17 @@ def test_server_exposes_only_supported_answer_routes_and_health_fields():
     assert set(server.HealthResponse.model_fields) == {"api", "ollama", "qdrant", "gemini"}
 
 
+def test_article_branch_number_can_be_used_as_metadata_filter():
+    server = server_module()
+    request = server.AskRequest(
+        question="연차 규정 제5조의2는 어떤 경우에 적용되나요?",
+        jo_no=5,
+        jo_sub_no=2,
+    )
+
+    assert server._build_metadata_filter(request) == {"jo_no": "5", "jo_sub_no": "2"}
+
+
 def test_ask_qwen_uses_latest_rag_signature(monkeypatch):
     server = server_module()
     settings = make_settings()

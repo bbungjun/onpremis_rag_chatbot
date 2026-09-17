@@ -40,6 +40,7 @@ _CONVENIENCE_FILTER_FIELDS = (
     "jeol",
     "jo",
     "jo_no",
+    "jo_sub_no",
     "hang_no",
     "hang_label",
     "department",
@@ -66,6 +67,7 @@ class AskRequest(BaseModel):
     jeol: str | None = None
     jo: str | None = None
     jo_no: str | int | None = None
+    jo_sub_no: str | int | None = None
     hang_no: str | int | None = None
     hang_label: str | None = None
     department: str | None = None

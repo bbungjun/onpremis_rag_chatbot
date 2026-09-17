@@ -32,6 +32,7 @@ HWP CLI v0.17.0의 Markdown에는 기본 표·번호 목록·각주 참조가 �
 - Python 3.11.4, HWP CLI 0.17.0, Windows 호스트에서 `HWP_CLI_PATH`와 `PYTHONUTF8=1`을 설정해 `python -m pytest -q`를 실행했다: **333 passed, 1 skipped** (최종 실행 7.15초). `ruff check .`, `ruff format --check .`, `git diff --check`도 통과했다.
 - 이전 실험의 1,000개 정책 단일 HWP 300,544바이트를 같은 파서로 재검사했다. 8,000 parent, 24,000 child, 32,000 고유 ID를 얻었다. 개발용 생성 질문 1,000개의 목표 조항 ID와 기대 답 문구가 모두 해당 parent 텍스트에서 발견됐다. 이 검사는 검색·답변 품질 평가가 아니다.
 - Docker 필수 명령을 실행했으나 최초에는 `.env`가 없어 실패했다. `.env.example`을 작업 트리의 무시 대상 `.env`로 복사해 재시도했고 Docker 엔진 파이프가 없어 컨테이너 실행, Qdrant 연결, healthcheck는 검증하지 못했다. Docker Desktop을 시작했지만 엔진 응답이 계속 멈췄고 `com.docker.service`는 현재 사용자 권한으로 시작할 수 없었다. 이미지 빌드와 컨테이너 내부 OCR은 미검증이다.
+- [PR #16](https://github.com/bbungjun/onpremis_rag_chatbot/pull/16)의 GitHub Actions `lint`와 `test`가 통과했다. 구현 커밋은 `56b721f`다. CI 테스트는 Docker 이미지 빌드·실제 OCR 품질 검사를 포함하지 않는다.
 
 ## After / 측정 결과
 

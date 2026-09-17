@@ -8,8 +8,8 @@ from time import perf_counter
 from types import SimpleNamespace
 from typing import Any
 
-from app.bedrock_rag_pipeline import answer_question_with_bedrock
 from app.config import Settings
+from app.gemini_pipeline import answer_question_with_gemini
 from app.rag_pipeline import answer_question
 
 AnswerFn = Callable[..., dict[str, Any]]
@@ -21,15 +21,15 @@ def compare_question(
     filters: dict[str, str | None],
     *,
     settings: Settings,
-    bedrock_region: str,
-    bedrock_model_id: str,
-    bedrock_model_label: str,
+    gemini_project: str,
+    gemini_location: str,
+    gemini_model: str,
     local_model: str | None = None,
     local_answer: AnswerFn = answer_question,
-    bedrock_answer: AnswerFn = answer_question_with_bedrock,
+    gemini_answer: AnswerFn = answer_question_with_gemini,
 ) -> dict[str, Any]:
     top_k = _int_from_env("PRESENTATION_TOP_K", settings.retrieval_top_k)
-    max_output_tokens = _int_from_env("BEDROCK_MAX_OUTPUT_TOKENS", settings.num_predict)
+    thinking_budget = _int_from_env("GEMINI_THINKING_BUDGET", 0)
     selected_local_model = _select_local_model(settings, local_model)
     local_settings = _settings_with_llm_model(settings, selected_local_model)
     normalized_filters = {
@@ -52,17 +52,19 @@ def compare_question(
         )
         api_future = (
             executor.submit(
-                _run_bedrock,
-                bedrock_answer,
+                _run_gemini,
+                gemini_answer,
                 question,
                 normalized_filters,
                 top_k,
                 settings,
-                bedrock_region,
-                bedrock_model_id,
-                max_output_tokens,
+                gemini_project,
+                gemini_location,
+                gemini_model,
+                settings.num_predict,
+                thinking_budget,
             )
-            if bedrock_model_id.strip()
+            if gemini_project.strip()
             else None
         )
 
@@ -70,9 +72,8 @@ def compare_question(
     api = (
         api_future.result()
         if api_future is not None
-        else _pending_panel("AWS Bedrock", "미설정", "Bedrock 모델 미설정")
+        else _pending_panel("Vertex Gemini", "미설정", "Gemini project 미설정")
     )
-    api["label"] = bedrock_model_label
     return {
         "question": question,
         "filters": normalized_filters,
@@ -109,36 +110,40 @@ def _run_local(
         return _error_panel("Ollama Local", model, exc, started)
 
 
-def _run_bedrock(
-    bedrock_answer: AnswerFn,
+def _run_gemini(
+    gemini_answer: AnswerFn,
     question: str,
     filters: dict[str, str | None],
     top_k: int,
     settings: Settings,
-    region: str,
-    model_id: str,
+    project: str,
+    location: str,
+    model: str,
     max_output_tokens: int,
+    thinking_budget: int,
 ) -> dict[str, Any]:
     started = perf_counter()
     try:
-        result = bedrock_answer(
+        result = gemini_answer(
             question,
             top_k,
             metadata_filter=_metadata_filter(filters),
-            region=region,
-            model_id=model_id,
+            project=project,
+            location=location,
+            model=model,
             max_output_tokens=max_output_tokens,
+            thinking_budget=thinking_budget,
             settings=settings,
         )
         return _ok_panel(
-            "AWS Bedrock",
-            model_id,
+            "Vertex Gemini",
+            model,
             result,
             started,
-            "Bedrock 응답 성공",
+            "Gemini 응답 성공",
         )
     except Exception as exc:
-        return _error_panel("AWS Bedrock", model_id or "미설정", exc, started)
+        return _error_panel("Vertex Gemini", model or "미설정", exc, started)
 
 
 def _ok_panel(
@@ -181,7 +186,7 @@ def _pending_panel(label: str, model: str, integration_message: str) -> dict[str
         "status": "pending",
         "integration_status": "pending",
         "integration_message": integration_message,
-        "answer": "Bedrock 모델이 아직 설정되지 않았습니다.",
+        "answer": "Gemini project가 아직 설정되지 않았습니다.",
         "sources": [],
         "generation_seconds": 0,
     }

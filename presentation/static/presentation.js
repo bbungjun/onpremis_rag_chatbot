@@ -206,11 +206,11 @@ function appendMessage(side, role, text, panel = {}) {
 
 function appendLoadingTurn() {
   appendMessage("local", "loading", "RAG 검색 중 · Local LLM 생성 준비 중");
-  appendMessage("api", "loading", "Bedrock 모델 상태 확인 중");
+  appendMessage("api", "loading", "Gemini 모델 상태 확인 중");
   state.loadingTimers.push(
     window.setTimeout(() => {
       updateLoadingMessage("local", "검색 근거 구성 완료 · Local LLM 생성 중");
-      updateLoadingMessage("api", "Bedrock 모델 상태 확인 중");
+      updateLoadingMessage("api", "Gemini 모델 상태 확인 중");
     }, 900),
     window.setTimeout(() => {
       updateLoadingMessage("local", "Local LLM 생성 중 · 응답이 길어지고 있습니다");
@@ -248,20 +248,17 @@ function panelRole(status) {
 
 function friendlyPanelText(side, panel) {
   if (panel.status === "pending") {
-    return panel.answer || "Bedrock 모델이 아직 설정되지 않았습니다.";
+    return panel.answer || "Gemini project가 아직 설정되지 않았습니다.";
   }
   if (panel.status !== "error") {
     return panel.answer;
   }
 
   const error = panel.error || "";
-  if (side === "api" && error.includes("model_id must not be empty")) {
-    return "Bedrock 모델 미설정. Bedrock 모델이 아직 설정되지 않았습니다.";
-  }
   if (side === "local") {
     return "Local LLM 응답 실패. 자세한 원인은 서버 로그를 확인하세요.";
   }
-  return "API 모델 응답 실패. 자세한 원인은 서버 로그를 확인하세요.";
+  return "Gemini 응답 실패. 자세한 원인은 서버 로그를 확인하세요.";
 }
 
 function logApiSignal(endpoint, response) {

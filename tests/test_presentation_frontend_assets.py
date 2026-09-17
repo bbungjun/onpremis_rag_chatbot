@@ -6,6 +6,7 @@ def test_presentation_index_contains_split_chat_labels():
 
     assert "Local LLM 챗봇" in html
     assert "API 모델 챗봇" in html
+    assert "Vertex Gemini" in html
     assert "localModelToggle" in html
     assert "localModelQwen" in html
     assert "localModelExaone" in html
@@ -63,7 +64,7 @@ def test_presentation_javascript_has_loading_and_answer_source_chips():
     assert "loading-message" in js
     assert "RAG 검색 중" in js
     assert "Local LLM 생성 중" in js
-    assert "Bedrock 모델 상태 확인 중" in js
+    assert "Gemini 모델 상태 확인 중" in js
     assert "function renderMessageSources" in js
     assert "source-chip" in js
     assert "function formatSourceLabel" in js
@@ -76,9 +77,8 @@ def test_presentation_javascript_uses_friendly_korean_status_text():
 
     assert "friendlyPanelText" in js
     assert "Local LLM 응답 실패" in js
-    assert "Bedrock 모델이 아직 설정되지 않았습니다." in js
-    assert "Bedrock 모델 미설정" in js
-    assert "model_id must not be empty" in js
+    assert "Gemini project가 아직 설정되지 않았습니다." in js
+    assert "Gemini 응답 실패" in js
 
 
 def test_presentation_javascript_logs_api_http_status_signals():

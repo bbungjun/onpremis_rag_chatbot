@@ -23,12 +23,21 @@ def test_streamlit_app_exposes_supported_ollama_model_options():
     }
 
 
+def test_streamlit_requests_only_local_and_enabled_gemini():
+    streamlit_app = streamlit_app_module()
+    requests = streamlit_app._model_requests(
+        {"question": "연차 신청은 며칠 전까지 해야 하나요?"},
+        selected_ollama_model="qwen3:4b-instruct",
+        gemini_config={"enabled": True, "project": "demo", "model": "gemini-2.5-flash"},
+    )
+
+    assert [model_key for model_key, _endpoint, _payload in requests] == ["ollama", "gemini"]
+
+
 def test_active_model_keys_use_single_ollama_session_key():
     streamlit_app = streamlit_app_module()
 
-    assert streamlit_app._active_model_keys(
-        {"gemini": {"enabled": False}, "bedrock": {"enabled": False}}
-    ) == ["ollama"]
+    assert streamlit_app._active_model_keys({"gemini": {"enabled": False}}) == ["ollama"]
 
 
 def test_model_requests_use_single_ollama_provider_for_selected_model_only():
@@ -38,7 +47,6 @@ def test_model_requests_use_single_ollama_provider_for_selected_model_only():
         {"question": "leave policy"},
         selected_ollama_model="exaone3.5:7.8b",
         gemini_config={"enabled": False},
-        bedrock_config={"enabled": False},
     )
 
     assert requests == [
@@ -61,11 +69,11 @@ def test_active_message_keys_route_ollama_to_selected_model_history():
     streamlit_app = streamlit_app_module()
 
     assert streamlit_app._active_message_keys(
-        {"gemini": {"enabled": False}, "bedrock": {"enabled": True}},
+        {"gemini": {"enabled": True}},
         selected_ollama_model="exaone3.5:7.8b",
     ) == {
         "ollama": "ollama_exaone_messages",
-        "bedrock": "bedrock_messages",
+        "gemini": "gemini_messages",
     }
 
 
@@ -94,7 +102,7 @@ def test_ask_both_models_sends_selected_ollama_model_only_to_ollama_endpoint(mon
     ) in calls
 
 
-def test_ask_both_models_uses_cloud_session_toggles_and_model_overrides(monkeypatch):
+def test_ask_both_models_uses_cloud_session_toggle(monkeypatch):
     streamlit_app = streamlit_app_module()
     calls = []
 
@@ -108,11 +116,6 @@ def test_ask_both_models_uses_cloud_session_toggles_and_model_overrides(monkeypa
         {"question": "4일후 연차신청하는데 가능한가요?"},
         selected_ollama_model="qwen3:4b-instruct",
         gemini_config={"enabled": False},
-        bedrock_config={
-            "enabled": True,
-            "region": "ap-northeast-3",
-            "model_id": "jp.anthropic.claude-sonnet-4-6",
-        },
     )
 
     assert (
@@ -123,14 +126,7 @@ def test_ask_both_models_uses_cloud_session_toggles_and_model_overrides(monkeypa
         },
     ) in calls
     assert not any(url == streamlit_app.GEMINI_ENDPOINT for url, payload in calls)
-    assert (
-        streamlit_app.BEDROCK_ENDPOINT,
-        {
-            "question": "4일후 연차신청하는데 가능한가요?",
-            "bedrock_region": "ap-northeast-3",
-            "bedrock_model_id": "jp.anthropic.claude-sonnet-4-6",
-        },
-    ) in calls
+    assert len(calls) == 1
 
 
 def test_ask_both_models_sends_gemini_session_endpoint_and_model(monkeypatch):
@@ -153,7 +149,6 @@ def test_ask_both_models_sends_gemini_session_endpoint_and_model(monkeypatch):
             "model": "gemini-2.5-pro",
             "thinking_budget": 0,
         },
-        bedrock_config={"enabled": False},
     )
 
     assert (
@@ -204,7 +199,6 @@ def test_iter_model_results_logs_liveqa_api_linked_state(monkeypatch, caplog):
             {"question": "leave policy"},
             selected_ollama_model="exaone3.5:7.8b",
             gemini_config={"enabled": False},
-            bedrock_config={"enabled": False},
         )
     )
 

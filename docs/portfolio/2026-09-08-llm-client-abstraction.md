@@ -2,15 +2,18 @@
 
 ## 한 줄 결론
 
-Qwen, Vertex Gemini, AWS Bedrock 생성 경로에 중복돼 있던 검색·문맥 조립 흐름을
+Qwen과 Vertex Gemini 생성 경로에 중복돼 있던 검색·문맥 조립 흐름을
 `app.rag_pipeline.answer_question` 하나로 통합하고, 생성 모델 차이는 `LLMClient` 구현체로
 격리했다. Docker 전체 테스트 311건 중 309건이 통과하고 2건이 환경 조건으로 스킵됐으며,
 로컬 Qwen RAG 샘플 질의에서 검색부터 생성·출처 반환까지 확인했다. 답변 품질과 성능의
 Before/After 변화는 측정하지 않았다.
 
+2026-09-18에 사용하지 않는 AWS 생성 경로를 제거했다. 아래 테스트 개수와 실행 시간은
+제거 이전 실행에서 관찰된 값이며, 현재 유지되는 구현과 설계 판단만 기술한다.
+
 ## Before / 문제
 
-Qwen, Gemini, Bedrock 파이프라인이 같은 검색 흐름을 각각 가지고 있었다. 질문 해석,
+Qwen과 Gemini 파이프라인이 같은 검색 흐름을 각각 가지고 있었다. 질문 해석,
 dense/sparse 표현 생성, Qdrant 검색, parent 조문 확장, 프롬프트 조립, 빈 결과 fallback이
 모델별 모듈에 중복돼 있어 공통 동작을 수정할 때 여러 경로를 함께 변경해야 했다.
 
@@ -18,12 +21,11 @@ dense/sparse 표현 생성, Qdrant 검색, parent 조문 확장, 프롬프트 �
 복제로 이어졌다. 이 구조에서는 한 경로에만 보안 지침, context 제한, 검색 옵션 또는
 fallback 수정이 반영될 위험이 있었다.
 
-영향 범위는 다음 세 생성 경로다.
+현재 유지되는 생성 경로는 다음 두 개다.
 
 ```text
 기본 온프레미스 경로  Ollama / Qwen
 비교·평가 경로        Vertex Gemini
-비교·평가 경로        AWS Bedrock
 ```
 
 ## Why / 분석
@@ -49,36 +51,23 @@ C는 Qwen 요청의 system 지시와 사용자·검색 문맥을 분리해야 �
 
 ## Solution / 구현
 
-`app/llm.py`에 `LLMClient` 추상 클래스와 세 구현체를 추가했다.
+`app/llm.py`에는 `LLMClient` 추상 클래스와 현재 두 구현체가 남아 있다.
 
 ```text
 LLMClient.generate(system_prompt, user_prompt)
 ├─ OllamaLLM  -> chat_qwen
-├─ GeminiLLM  -> chat_gemini_vertex
-└─ BedrockLLM -> chat_bedrock
+└─ GeminiLLM  -> chat_gemini_vertex
 ```
 
 `app.rag_pipeline.answer_question`은 선택적 `llm` 인자를 받고, 생략 시 기존과 같이
 `Settings`에서 `OllamaLLM`을 만든다. 임베딩, sparse 표현, Qdrant 검색, parent 확장,
 프롬프트 조립, fallback, source 반환은 하나의 공통 경로가 담당한다.
 
-Gemini와 Bedrock 파이프라인은 각 공급자 설정을 해당 `LLMClient`로 변환해 공통 파이프라인에
+Gemini 파이프라인은 공급자 설정을 해당 `LLMClient`로 변환해 공통 파이프라인에
 주입하는 얇은 어댑터가 됐다. 공급자 이름은 진행 메시지와 타이밍 라벨에 반영된다.
 
 기존 think 모드도 `OllamaLLM.from_settings`에서 `llm_think`를 받아 `chat_qwen`까지 전달한다.
 따라서 `qwen3:4b-instruct`의 현재 `LLM_THINK=off` 설정은 리팩터링 뒤에도 유지된다.
-
-파일별 실제 diff는 다음과 같다.
-
-```text
-app/llm.py                         +169 /   -0
-app/rag_pipeline.py                 +41 /  -25
-app/gemini_pipeline.py              +27 / -123
-app/bedrock_rag_pipeline.py         +25 / -124
-tests/test_llm.py                  +235 /   -0
-tests/test_rag_pipeline.py         +113 /   -0
-tests/test_bedrock_rag_pipeline.py  +11 /   -8
-```
 
 ## Verification
 
@@ -141,7 +130,7 @@ docker compose run --rm rag-api python scripts/ask_rag.py \
 
 ## After / 확인된 결과
 
-- 생성 공급자 세 경로가 동일한 검색·문맥 조립·fallback 구현을 사용한다.
+- 현재 두 생성 경로가 동일한 검색·문맥 조립·fallback 구현을 사용한다.
 - `LLMClient` 주입 시 기본 Qwen 호출을 건너뛰는 계약이 테스트로 확인됐다.
 - 각 구현체가 system prompt와 user prompt를 분리된 인자로 기존 공급자 클라이언트에
   전달하는 것이 테스트로 확인됐다.
@@ -166,7 +155,7 @@ Ollama           0.32.5
 
 남은 한계:
 
-1. Gemini와 Bedrock은 단위·통합 테스트의 주입 함수로 검증했으며 실제 클라우드 API 호출은
+1. Gemini는 단위·통합 테스트의 주입 함수로 검증했으며 실제 클라우드 API 호출은
    자격 증명과 비용이 필요한 관계로 실행하지 않았다.
 2. EXAONE 실제 생성 경로는 환경 플래그가 없어 스킵됐다.
 3. 리팩터링 전후 답변 동등성, 품질, 지연, GPU/메모리 사용량은 측정하지 않았다.

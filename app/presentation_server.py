@@ -61,13 +61,13 @@ def make_app(
                     question,
                     filters,
                     settings=settings_factory(),
-                    bedrock_region=_env_text(active_env, "BEDROCK_REGION", "ap-northeast-2"),
-                    bedrock_model_id=_env_text(active_env, "BEDROCK_MODEL_ID", ""),
-                    bedrock_model_label=_env_text(
-                        active_env,
-                        "BEDROCK_MODEL_LABEL",
-                        "AWS Bedrock",
+                    gemini_project=(
+                        active_env.get("GOOGLE_CLOUD_PROJECT")
+                        or active_env.get("GCP_PROJECT_ID")
+                        or ""
                     ),
+                    gemini_location=_env_text(active_env, "GOOGLE_CLOUD_LOCATION", "us-central1"),
+                    gemini_model=_env_text(active_env, "GEMINI_MODEL", "gemini-2.5-flash"),
                     local_model=local_model,
                 )
                 return _json_response(start_response, 200, result)

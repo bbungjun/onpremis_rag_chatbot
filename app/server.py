@@ -13,8 +13,6 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from app.bedrock_client import has_bedrock_credentials
-from app.bedrock_rag_pipeline import answer_question_with_bedrock
 from app.config import Settings
 from app.gemini_pipeline import answer_question_with_gemini
 from app.rag_pipeline import answer_question
@@ -32,7 +30,6 @@ _HEALTH_TIMEOUT_SECONDS = 5.0
 _DEFAULT_GEMINI_LOCATION = "us-central1"
 _DEFAULT_GEMINI_MODEL = "gemini-2.5-flash"
 _DEFAULT_GEMINI_THINKING_BUDGET = 0
-_DEFAULT_BEDROCK_REGION = "ap-northeast-3"
 _SUPPORTED_OLLAMA_MODELS = ("qwen3:4b-instruct", "exaone3.5:7.8b")
 _CONVENIENCE_FILTER_FIELDS = (
     "source_path",
@@ -59,9 +56,6 @@ class AskRequest(BaseModel):
     gemini_location: str | None = None
     gemini_model: str | None = None
     gemini_thinking_budget: int | None = None
-    bedrock_region: str | None = None
-    bedrock_model_id: str | None = None
-    bedrock_max_output_tokens: int | None = None
     top_k: int | None = None
     metadata_filter: dict[str, Any] | None = None
     source_path: str | None = None
@@ -96,7 +90,6 @@ class HealthResponse(BaseModel):
     ollama: ServiceStatus
     qdrant: ServiceStatus
     gemini: ServiceStatus
-    bedrock: ServiceStatus
 
 
 @app.get("/health", response_model=ServiceStatus)
@@ -112,7 +105,6 @@ def health_services() -> HealthResponse:
         ollama=_check_ollama(settings.ollama_base_url, settings.llm_model),
         qdrant=_check_qdrant(settings.qdrant_url),
         gemini=_check_gemini(),
-        bedrock=_check_bedrock(),
     )
 
 
@@ -177,41 +169,6 @@ def ask_gemini(req: AskRequest) -> AskResponse:
     return _ask_response(result, started)
 
 
-@app.post("/api/ask/bedrock", response_model=AskResponse)
-def ask_bedrock(req: AskRequest) -> AskResponse:
-    if not _env_bool("ENABLE_BEDROCK_ENDPOINT", True):
-        raise HTTPException(status_code=503, detail="Bedrock endpoint is disabled.")
-
-    settings = Settings.from_env()
-    model_id = _first_text(req.bedrock_model_id, os.getenv("BEDROCK_MODEL_ID"))
-    if not model_id:
-        raise HTTPException(status_code=503, detail="BEDROCK_MODEL_ID is required for Bedrock.")
-
-    started = perf_counter()
-    try:
-        result = answer_question_with_bedrock(
-            req.question,
-            _resolve_top_k(req, settings),
-            metadata_filter=_build_metadata_filter(req),
-            region=_first_text(
-                req.bedrock_region,
-                os.getenv("BEDROCK_REGION"),
-                _DEFAULT_BEDROCK_REGION,
-            ),
-            model_id=model_id,
-            max_output_tokens=_resolve_bedrock_max_output_tokens(req, settings),
-            settings=settings,
-            progress=None,
-            timing=None,
-        )
-    except (TypeError, ValueError) as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
-
-    return _ask_response(result, started)
-
-
 def _ask_response(result: dict[str, Any], started: float) -> AskResponse:
     return AskResponse(
         answer=str(result["answer"]),
@@ -222,20 +179,6 @@ def _ask_response(result: dict[str, Any], started: float) -> AskResponse:
 
 def _resolve_top_k(req: AskRequest, settings: Settings) -> int:
     return settings.retrieval_top_k if req.top_k is None else req.top_k
-
-
-def _resolve_bedrock_max_output_tokens(req: AskRequest, settings: Settings) -> int:
-    if req.bedrock_max_output_tokens is not None:
-        return req.bedrock_max_output_tokens
-    raw_value = os.getenv("BEDROCK_MAX_OUTPUT_TOKENS")
-    if raw_value is None or raw_value.strip() == "":
-        return settings.num_predict
-    try:
-        return int(raw_value)
-    except ValueError as exc:
-        raise ValueError(
-            f"BEDROCK_MAX_OUTPUT_TOKENS must be an integer, got {raw_value!r}"
-        ) from exc
 
 
 def _settings_for_requested_ollama_model(
@@ -390,21 +333,6 @@ def _credential_file_status(credential_path: str) -> ServiceStatus | None:
         status="warning",
         detail="Credential file is present but does not include a credential type.",
     )
-
-
-def _check_bedrock() -> ServiceStatus:
-    region = os.getenv("BEDROCK_REGION", _DEFAULT_BEDROCK_REGION)
-    model_id = os.getenv("BEDROCK_MODEL_ID", "").strip()
-    if not model_id:
-        return ServiceStatus(status="warning", detail="BEDROCK_MODEL_ID is not configured.")
-
-    try:
-        if has_bedrock_credentials():
-            return ServiceStatus(status="ok", detail=f"Region {region!r}, model {model_id!r}.")
-    except Exception as exc:
-        return ServiceStatus(status="warning", detail=f"Bedrock credential check failed: {exc}")
-
-    return ServiceStatus(status="warning", detail="AWS credentials were not found.")
 
 
 def _gemini_project() -> str:

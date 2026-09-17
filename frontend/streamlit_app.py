@@ -13,7 +13,6 @@ API_BASE = os.getenv("RAG_API_URL", "http://localhost:8000")
 OLLAMA_ENDPOINT = f"{API_BASE}/api/ask/qwen"
 QWEN_ENDPOINT = OLLAMA_ENDPOINT
 GEMINI_ENDPOINT = f"{API_BASE}/api/ask/gemini"
-BEDROCK_ENDPOINT = f"{API_BASE}/api/ask/bedrock"
 HEALTH_ENDPOINT = f"{API_BASE}/health/services"
 ASK_TIMEOUT_SECONDS = 180.0
 HEALTH_TIMEOUT_SECONDS = 6.0
@@ -29,16 +28,9 @@ GEMINI_MODEL_OPTIONS = {
     "Gemini 2.5 Flash": "gemini-2.5-flash",
     "Gemini 2.5 Pro": "gemini-2.5-pro",
 }
-BEDROCK_MODEL_OPTIONS = {
-    "Claude Sonnet 4.6": "jp.anthropic.claude-sonnet-4-6",
-    "Claude Opus 4.6": "global.anthropic.claude-opus-4-6-v1",
-    "Claude Sonnet 4.5": "global.anthropic.claude-sonnet-4-5-20250929-v1:0",
-}
 DEFAULT_GEMINI_LOCATION = os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1")
 DEFAULT_GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 DEFAULT_GEMINI_PROJECT = os.getenv("GOOGLE_CLOUD_PROJECT") or os.getenv("GCP_PROJECT_ID", "")
-DEFAULT_BEDROCK_REGION = os.getenv("BEDROCK_REGION", "ap-northeast-3")
-DEFAULT_BEDROCK_MODEL = os.getenv("BEDROCK_MODEL_ID", "jp.anthropic.claude-sonnet-4-6")
 LOGGER = logging.getLogger("llmenhance.liveqa")
 LOGGER.setLevel(getattr(logging, os.getenv("LIVEQA_LOG_LEVEL", "INFO").upper(), logging.INFO))
 if not LOGGER.handlers:
@@ -72,7 +64,6 @@ def _init_state() -> None:
         "ollama_qwen_messages": existing_ollama_messages,
         "ollama_exaone_messages": [],
         "gemini_messages": [],
-        "bedrock_messages": [],
         "service_status": None,
     }
     for key, value in defaults.items():
@@ -105,7 +96,6 @@ def _render_sidebar() -> None:
         _render_status_line("Ollama", status.get("ollama", {}))
         _render_status_line("Qdrant", status.get("qdrant", {}))
         _render_status_line("Vertex Gemini", status.get("gemini", {}))
-        _render_status_line("AWS Bedrock", status.get("bedrock", {}))
 
         st.divider()
         overall = _overall_status(status)
@@ -125,7 +115,7 @@ def _render_main() -> None:
 
     status = st.session_state.service_status
     cloud_configs = _cloud_session_configs()
-    col_ollama, col_gemini, col_bedrock = st.columns(3)
+    col_ollama, col_gemini = st.columns(2)
 
     with col_ollama:
         _render_panel_header("EC2 Ollama", status, "ollama")
@@ -142,12 +132,6 @@ def _render_main() -> None:
         st.divider()
         _render_chat_history(st.session_state.gemini_messages)
 
-    with col_bedrock:
-        _render_panel_header("AWS Bedrock", status, "bedrock")
-        st.caption("AWS Bedrock RAG")
-        st.divider()
-        _render_chat_history(st.session_state.bedrock_messages)
-
     question = st.chat_input("사내 규정에 대해 질문하세요.")
     if not question:
         return
@@ -163,15 +147,11 @@ def _render_main() -> None:
     }
     if cloud_configs["gemini"]["enabled"]:
         live_containers["gemini"] = _render_live_user_message(col_gemini, question)
-    if cloud_configs["bedrock"]["enabled"]:
-        live_containers["bedrock"] = _render_live_user_message(col_bedrock, question)
-
     with st.spinner(_liveqa_spinner_text(active_model_keys)):
         for model_key, result in _iter_model_results(
             payload,
             selected_ollama_model=selected_ollama_model,
             gemini_config=cloud_configs["gemini"],
-            bedrock_config=cloud_configs["bedrock"],
         ):
             messages_key = active_message_keys[model_key]
             _append_assistant_message(messages_key, result)
@@ -200,7 +180,6 @@ def _fetch_service_status() -> dict[str, Any]:
             "ollama": {"status": "unknown", "detail": ""},
             "qdrant": {"status": "unknown", "detail": ""},
             "gemini": {"status": "unknown", "detail": ""},
-            "bedrock": {"status": "unknown", "detail": ""},
         }
         _log_liveqa_service_status(status)
         return status
@@ -242,20 +221,6 @@ def _render_cloud_session_controls() -> None:
             key="gemini_thinking_budget",
         )
 
-    bedrock_enabled = st.toggle(
-        "Bedrock",
-        value=_env_bool("ENABLE_BEDROCK_PANEL", bool(DEFAULT_BEDROCK_MODEL)),
-        key="bedrock_enabled",
-    )
-    if bedrock_enabled:
-        st.text_input("Bedrock region", value=DEFAULT_BEDROCK_REGION, key="bedrock_region")
-        _render_model_text_input(
-            "Bedrock model/profile",
-            BEDROCK_MODEL_OPTIONS,
-            DEFAULT_BEDROCK_MODEL,
-            "bedrock_model_id",
-        )
-
 
 def _render_model_text_input(
     label: str,
@@ -290,16 +255,6 @@ def _cloud_session_configs() -> dict[str, dict[str, Any]]:
                 "gemini_thinking_budget", int(os.getenv("GEMINI_THINKING_BUDGET", "0"))
             ),
         },
-        "bedrock": {
-            "enabled": bool(
-                st.session_state.get(
-                    "bedrock_enabled",
-                    _env_bool("ENABLE_BEDROCK_PANEL", bool(DEFAULT_BEDROCK_MODEL)),
-                )
-            ),
-            "region": st.session_state.get("bedrock_region", DEFAULT_BEDROCK_REGION),
-            "model_id": st.session_state.get("bedrock_model_id", DEFAULT_BEDROCK_MODEL),
-        },
     }
 
 
@@ -307,8 +262,6 @@ def _active_model_keys(cloud_configs: dict[str, dict[str, Any]]) -> list[str]:
     keys = ["ollama"]
     if cloud_configs["gemini"]["enabled"]:
         keys.append("gemini")
-    if cloud_configs["bedrock"]["enabled"]:
-        keys.append("bedrock")
     return keys
 
 
@@ -318,8 +271,6 @@ def _active_message_keys(
     keys = {"ollama": _ollama_messages_key(selected_ollama_model)}
     if cloud_configs["gemini"]["enabled"]:
         keys["gemini"] = "gemini_messages"
-    if cloud_configs["bedrock"]["enabled"]:
-        keys["bedrock"] = "bedrock_messages"
     return keys
 
 
@@ -332,7 +283,6 @@ def _ask_both_models(
     *,
     selected_ollama_model: str,
     gemini_config: dict[str, Any] | None = None,
-    bedrock_config: dict[str, Any] | None = None,
 ) -> dict[str, dict[str, Any]]:
     return {
         model_key: result
@@ -340,7 +290,6 @@ def _ask_both_models(
             payload,
             selected_ollama_model=selected_ollama_model,
             gemini_config=gemini_config,
-            bedrock_config=bedrock_config,
         )
     }
 
@@ -350,13 +299,11 @@ def _iter_model_results(
     *,
     selected_ollama_model: str,
     gemini_config: dict[str, Any] | None = None,
-    bedrock_config: dict[str, Any] | None = None,
 ) -> Any:
     requests = _model_requests(
         payload,
         selected_ollama_model=selected_ollama_model,
         gemini_config=gemini_config,
-        bedrock_config=bedrock_config,
     )
     _log_liveqa_api_links(requests)
     with ThreadPoolExecutor(max_workers=len(requests)) as executor:
@@ -380,7 +327,6 @@ def _model_requests(
     *,
     selected_ollama_model: str,
     gemini_config: dict[str, Any] | None,
-    bedrock_config: dict[str, Any] | None,
 ) -> list[tuple[str, str, dict[str, Any]]]:
     requests = [
         ("ollama", OLLAMA_ENDPOINT, {**payload, "llm_model": selected_ollama_model}),
@@ -388,11 +334,6 @@ def _model_requests(
 
     if _provider_enabled(gemini_config, default=True):
         requests.append(("gemini", GEMINI_ENDPOINT, _gemini_payload(payload, gemini_config or {})))
-
-    if _provider_enabled(bedrock_config, default=False):
-        requests.append(
-            ("bedrock", BEDROCK_ENDPOINT, _bedrock_payload(payload, bedrock_config or {}))
-        )
 
     return requests
 
@@ -411,16 +352,6 @@ def _gemini_payload(payload: dict[str, Any], config: dict[str, Any]) -> dict[str
             "gemini_location": config.get("location"),
             "gemini_model": config.get("model"),
             "gemini_thinking_budget": config.get("thinking_budget"),
-        },
-    )
-
-
-def _bedrock_payload(payload: dict[str, Any], config: dict[str, Any]) -> dict[str, Any]:
-    return _payload_with_optional_values(
-        payload,
-        {
-            "bedrock_region": config.get("region"),
-            "bedrock_model_id": config.get("model_id"),
         },
     )
 
@@ -599,8 +530,6 @@ def _request_model_name(provider: str, payload: dict[str, Any]) -> str:
         return str(payload.get("llm_model", ""))
     if provider == "gemini":
         return str(payload.get("gemini_model", DEFAULT_GEMINI_MODEL))
-    if provider == "bedrock":
-        return str(payload.get("bedrock_model_id", DEFAULT_BEDROCK_MODEL))
     return ""
 
 

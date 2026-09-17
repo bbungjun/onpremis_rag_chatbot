@@ -1,5 +1,9 @@
 FROM python:3.11-slim
 
+RUN apt-get update \
+    && apt-get install --no-install-recommends -y tesseract-ocr tesseract-ocr-kor tesseract-ocr-eng \
+    && rm -rf /var/lib/apt/lists/*
+
 ADD --checksum=sha256:842c05600b70cb04639958269426e5ffe83ef390a069df7936286c6081ac0f1b \
     https://github.com/STAIxBWLB/hwp-cli/releases/download/v0.17.0/hwp-v0.17.0-x86_64-unknown-linux-gnu.tar.gz \
     /tmp/hwp-cli.tar.gz

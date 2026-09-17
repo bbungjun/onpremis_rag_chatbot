@@ -5,9 +5,12 @@ from __future__ import annotations
 import os
 import re
 import subprocess
+import tempfile
+from collections.abc import Callable
 from pathlib import Path
 
 from app.chunking import CIRCLED, chunk_text
+from app.hwp_formatting import normalize_rich_markdown
 
 _HEADING = re.compile(
     r"^(#{1,3})\s+(?:\*\*)?(?:\d+(?:-\d+)*\.\s*)?"
@@ -22,9 +25,15 @@ _ARTICLE_PLAIN_INLINE = re.compile(rf"^{_ARTICLE_LABEL}\s+(?=[{CIRCLED}])(.+)$")
 _ARTICLE_START = re.compile(rf"^\s*(?:\*\*)?{_ARTICLE_NAME}(?:\s*\([^)]*\))?(?:\*\*)?(?=\s|:|$)")
 _ARTICLE_BOLD_MARKER = re.compile(rf"(?<!\S)\*\*{_ARTICLE_NAME}(?:\s*\([^)]*\))?\*\*(?=\s|:|$)")
 _HANG_SPLIT = re.compile(rf"(?<!\S)(?=[{CIRCLED}]\s)")
+_IMAGE_REFERENCE = re.compile(r"!\[[^\]]*\]\([^)]*\)")
 
 
-def read_document(path: str | Path, *, hwp_cli: str | None = None) -> str:
+def read_document(
+    path: str | Path,
+    *,
+    hwp_cli: str | None = None,
+    ocr_image: Callable[[Path], str] | None = None,
+) -> str:
     """Markdown 또는 HWP 5.0을 읽는다. HWP 구조가 추출되지 않으면 실패한다."""
     source = Path(path)
     suffix = source.suffix.lower()
@@ -49,7 +58,43 @@ def read_document(path: str | Path, *, hwp_cli: str | None = None) -> str:
     except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
         raise RuntimeError(f"HWP 추출 실패: {source}") from exc
 
-    normalized = normalize_hwp_markdown(result.stdout)
+    extracted = result.stdout
+    if _IMAGE_REFERENCE.search(extracted):
+        with tempfile.TemporaryDirectory(prefix="hwp-media-") as directory:
+            output = Path(directory) / "document.md"
+            try:
+                subprocess.run(
+                    [
+                        command,
+                        "convert",
+                        str(source.resolve()),
+                        "-o",
+                        str(output),
+                        "--media-dir",
+                        "media",
+                    ],
+                    capture_output=True,
+                    text=True,
+                    encoding="utf-8",
+                    check=True,
+                    timeout=120,
+                    shell=False,
+                )
+            except (
+                FileNotFoundError,
+                subprocess.CalledProcessError,
+                subprocess.TimeoutExpired,
+            ) as exc:
+                raise RuntimeError(f"HWP 이미지 추출 실패: {source}") from exc
+            extracted = normalize_rich_markdown(
+                output.read_text(encoding="utf-8"),
+                media_root=Path(directory),
+                ocr_image=ocr_image,
+            )
+    else:
+        extracted = normalize_rich_markdown(extracted)
+
+    normalized = normalize_hwp_markdown(extracted)
     chunks = chunk_text(normalized)
     parent_count = sum(chunk["type"] == "parent" for chunk in chunks)
     if not parent_count or not any(chunk["type"] == "child" for chunk in chunks):

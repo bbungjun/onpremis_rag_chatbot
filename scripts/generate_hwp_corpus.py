@@ -6,6 +6,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import subprocess
 import sys
 from dataclasses import dataclass
@@ -57,6 +58,16 @@ class GeneratedPolicy:
     theme: str
     unit: str
     role: str
+
+
+@dataclass(frozen=True)
+class GeneratedBook:
+    markdown: str
+    questions: list[dict]
+    policy_count: int
+
+
+_ARTICLE_REF = re.compile(r"제([1-8])조")
 
 
 def make_policy(index: int) -> GeneratedPolicy:
@@ -122,6 +133,138 @@ def make_policy(index: int) -> GeneratedPolicy:
     )
 
 
+def make_regulation_book(count: int) -> GeneratedBook:
+    """정책을 편/장/절로 묶고 조 번호를 책 전체에서 이어 붙인다."""
+    order = [
+        (theme_no, unit_no, role_no)
+        for theme_no in range(len(THEMES))
+        for unit_no in range(len(UNITS))
+        for role_no in range(len(ROLES))
+    ]
+    if not 1 <= count <= len(order):
+        raise ValueError(f"book count must be between 1 and {len(order)}")
+
+    blocks: list[str] = []
+    questions: list[dict] = []
+    previous_theme = previous_unit = -1
+    for position, (theme_no, unit_no, role_no) in enumerate(order[:count]):
+        if theme_no != previous_theme:
+            blocks.append(f"# 제{theme_no + 1}편 {THEMES[theme_no].title} 운영")
+        if theme_no != previous_theme or unit_no != previous_unit:
+            blocks.append(f"## 제{unit_no + 1}장 {UNITS[unit_no]} 기준")
+        blocks.append(f"### 제{role_no + 1}절 {ROLES[role_no]} 적용")
+        previous_theme, previous_unit = theme_no, unit_no
+
+        policy_index = (
+            theme_no + len(THEMES) * unit_no + len(THEMES) * len(UNITS) * role_no
+        )
+        policy = make_policy(policy_index)
+        article_offset = position * 8
+
+        def renumber(value: str) -> str:
+            return _ARTICLE_REF.sub(
+                lambda match: f"제{article_offset + int(match.group(1))}조", value
+            )
+
+        blocks.extend(renumber(block) for block in policy.markdown.strip().split("\n\n")[3:])
+        questions.append({
+            "question": policy.question,
+            "expected_answer": renumber(policy.answer),
+            "expected_chunk_id": f"jo-{article_offset + 3}",
+            "policy_id": policy.policy_id,
+            "kind": "generated-development-only",
+        })
+
+    return GeneratedBook("\n\n".join(blocks) + "\n", questions, count)
+
+
+def generate_book(count: int, output: Path, *, hwp_cli: str) -> dict:
+    """합성 정책 전체를 HWP 규정집 한 권으로 생성·재추출·검증한다."""
+    book = make_regulation_book(count)
+    output.mkdir(parents=True, exist_ok=True)
+    docs_dir = output / "docs"
+    docs_dir.mkdir(exist_ok=True)
+    source_dir = output / "source_md"
+    source_dir.mkdir(exist_ok=True)
+    stem = f"synthetic-regulations-{count}"
+    md_path = source_dir / f"{stem}.md"
+    hwp_path = docs_dir / f"{stem}.hwp"
+    md_path.write_text(book.markdown, encoding="utf-8")
+    _write_hwp(md_path, hwp_path, hwp_cli)
+
+    extracted = read_document(hwp_path, hwp_cli=hwp_cli)
+    chunks = chunk_text(extracted)
+    parents = sum(chunk["type"] == "parent" for chunk in chunks)
+    children = sum(chunk["type"] == "child" for chunk in chunks)
+    if (parents, children) != (8 * count, 24 * count):
+        raise ValueError(f"HWP 구조 손실: parent={parents}, child={children}")
+    if len({chunk["id"] for chunk in chunks}) != len(chunks):
+        raise ValueError("HWP 청크 ID 충돌")
+    policy_ids = set(re.findall(r"SYN-POL-\d{5}", extracted))
+    if len(policy_ids) != count:
+        raise ValueError(f"HWP 정책 문구 손실: {len(policy_ids)}/{count}")
+
+    manifest = {
+        "path": hwp_path.relative_to(output).as_posix(),
+        "policies": count,
+        "bytes": hwp_path.stat().st_size,
+        "sha256": hashlib.sha256(hwp_path.read_bytes()).hexdigest(),
+        "parent_chunks": parents,
+        "child_chunks": children,
+    }
+    (output / "manifest.jsonl").write_text(
+        json.dumps(manifest, ensure_ascii=False) + "\n", encoding="utf-8"
+    )
+    source_path = _source_ref(hwp_path)
+    (output / "qa_generated_dev.jsonl").write_text(
+        "\n".join(
+            json.dumps({**question, "source_path": source_path}, ensure_ascii=False)
+            for question in book.questions
+        ) + "\n",
+        encoding="utf-8",
+    )
+    return {
+        "documents": 1,
+        "policies": count,
+        "hwp_bytes": manifest["bytes"],
+        "parent_chunks": parents,
+        "child_chunks": children,
+        "output": str(hwp_path),
+    }
+
+
+def _write_hwp(md_path: Path, hwp_path: Path, hwp_cli: str) -> None:
+    try:
+        subprocess.run(
+            [hwp_cli, "new", "-o", str(hwp_path), "--from", str(md_path), "--strict"],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            check=True,
+            timeout=300,
+            shell=False,
+        )
+        subprocess.run(
+            [hwp_cli, "validate", str(hwp_path)],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            check=True,
+            timeout=300,
+            shell=False,
+        )
+    except (FileNotFoundError, subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
+        raise RuntimeError(f"HWP 생성/검증 실패: {hwp_path}") from exc
+
+
+def _source_ref(path: Path) -> str:
+    resolved = path.resolve()
+    try:
+        return resolved.relative_to(Path.cwd().resolve()).as_posix()
+    except ValueError:
+        return resolved.as_posix()
+
+
 def generate_corpus(count: int, output: Path, *, hwp_cli: str) -> dict:
     if count <= 0:
         raise ValueError("count must be greater than zero")
@@ -137,27 +280,7 @@ def generate_corpus(count: int, output: Path, *, hwp_cli: str) -> dict:
         md_path = source_dir / f"{Path(policy.filename).stem}.md"
         hwp_path = docs_dir / policy.filename
         md_path.write_text(policy.markdown, encoding="utf-8")
-        try:
-            subprocess.run(
-                [hwp_cli, "new", "-o", str(hwp_path), "--from", str(md_path), "--strict"],
-                capture_output=True,
-                text=True,
-                encoding="utf-8",
-                check=True,
-                timeout=120,
-                shell=False,
-            )
-            subprocess.run(
-                [hwp_cli, "validate", str(hwp_path)],
-                capture_output=True,
-                text=True,
-                encoding="utf-8",
-                check=True,
-                timeout=120,
-                shell=False,
-            )
-        except (FileNotFoundError, subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
-            raise RuntimeError(f"HWP 생성/검증 실패: {policy.filename}") from exc
+        _write_hwp(md_path, hwp_path, hwp_cli)
         extracted = read_document(hwp_path, hwp_cli=hwp_cli)
         if policy.policy_id not in extracted or policy.answer.split(". (")[0] not in extracted:
             raise ValueError(f"HWP 왕복 검사 실패: {policy.filename}")
@@ -178,10 +301,7 @@ def generate_corpus(count: int, output: Path, *, hwp_cli: str) -> dict:
             "unit": policy.unit,
             "role": policy.role,
         })
-        try:
-            source_path = hwp_path.resolve().relative_to(Path.cwd().resolve()).as_posix()
-        except ValueError:
-            source_path = hwp_path.resolve().as_posix()
+        source_path = _source_ref(hwp_path)
         qa.append({
             "question": policy.question,
             "expected_answer": policy.answer,
@@ -210,9 +330,11 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--count", type=int, default=1000)
     parser.add_argument("--output", type=Path, default=Path("reports/hwp-large-corpus"))
+    parser.add_argument("--layout", choices=("book", "split"), default="book")
     parser.add_argument("--hwp-cli", default=os.environ.get("HWP_CLI_PATH", "hwp"))
     args = parser.parse_args(argv)
-    print(json.dumps(generate_corpus(args.count, args.output, hwp_cli=args.hwp_cli), ensure_ascii=False))
+    generate = generate_book if args.layout == "book" else generate_corpus
+    print(json.dumps(generate(args.count, args.output, hwp_cli=args.hwp_cli), ensure_ascii=False))
     return 0
 
 

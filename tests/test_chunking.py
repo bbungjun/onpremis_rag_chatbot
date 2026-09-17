@@ -91,6 +91,28 @@ def test_chunk_ids_are_unique_and_stable():
     assert "jo-2-hang-1" in ids
 
 
+def test_repeated_article_numbers_in_one_book_keep_distinct_parent_ids():
+    book = """# 제1편 인사
+## 제1장 휴가
+**제1조 (연차)**
+① 연차는 3영업일 전에 신청한다.
+# 제2편 재무
+## 제1장 출장
+**제1조 (출장비)**
+① 출장비는 5영업일 이내에 정산한다.
+"""
+
+    chunks = chunk_text(book)
+    parents = [chunk for chunk in chunks if chunk["type"] == "parent"]
+    children = [chunk for chunk in chunks if chunk["type"] == "child"]
+
+    assert len(parents) == len(children) == 2
+    assert len({chunk["id"] for chunk in chunks}) == 4
+    assert parents[0]["id"] != parents[1]["id"]
+    assert children[0]["parent_id"] == parents[0]["id"]
+    assert children[1]["parent_id"] == parents[1]["id"]
+
+
 def test_table_summary_prepends_column_header_line():
     text = "앞 문장\n| 구분 | 금액 |\n| --- | --- |\n| 부서장 | 100만원 |\n뒤 문장"
 

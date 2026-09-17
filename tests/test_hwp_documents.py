@@ -162,6 +162,42 @@ def test_synthetic_policy_generator_produces_distinct_scoped_rules():
     assert "①" in first.markdown
 
 
+def test_single_book_has_hierarchy_and_unique_article_ids():
+    generator = importlib.import_module("scripts.generate_hwp_corpus")
+    book = generator.make_regulation_book(2)
+    chunks = importlib.import_module("app.chunking").chunk_text(book.markdown)
+
+    assert book.policy_count == 2
+    assert book.markdown.count("# 제1편 연차 운영") == 1
+    assert "## 제1장 서울본부 기준" in book.markdown
+    assert "### 제1절 정규직 적용" in book.markdown
+    assert "### 제2절 계약직 적용" in book.markdown
+    assert len([chunk for chunk in chunks if chunk["type"] == "parent"]) == 16
+    assert len([chunk for chunk in chunks if chunk["type"] == "child"]) == 48
+    assert len({chunk["id"] for chunk in chunks}) == 64
+    assert chunks[-4]["metadata"]["jo_no"] == 16
+
+
+def test_two_policy_book_roundtrips_as_one_real_hwp(tmp_path):
+    cli = os.environ.get("HWP_CLI_PATH") or shutil.which("hwp")
+    if not cli:
+        pytest.skip("HWP CLI is unavailable on this host")
+    generator = importlib.import_module("scripts.generate_hwp_corpus")
+
+    result = generator.generate_book(2, tmp_path, hwp_cli=cli)
+
+    hwp_files = list((tmp_path / "docs").glob("*.hwp"))
+    assert len(hwp_files) == 1
+    assert result["documents"] == 1
+    assert result["policies"] == 2
+    assert result["parent_chunks"] == 16
+    assert result["child_chunks"] == 48
+    text = importlib.import_module("app.document_reader").read_document(
+        hwp_files[0], hwp_cli=cli
+    )
+    assert "제16조" in text
+
+
 def test_real_hwp_fixture_roundtrip_preserves_articles_and_paragraphs():
     cli = os.environ.get("HWP_CLI_PATH") or shutil.which("hwp")
     if not cli:
@@ -211,3 +247,36 @@ def test_two_hwp_files_flow_through_ingestion_with_distinct_point_ids(
     )
     assert len({point["id"] for point in uploaded}) == 48
     assert {point["payload"]["title"] for point in uploaded} == {"a.hwp", "b.hwp"}
+
+
+def test_one_book_with_repeated_article_numbers_keeps_both_parent_texts(
+    tmp_path, monkeypatch
+):
+    ingest = importlib.import_module("scripts.ingest_md")
+    (tmp_path / "book.md").write_text(
+        "# 제1편 인사\n**제1조 (연차)**\n① 연차는 3일 전에 신청한다.\n"
+        "# 제2편 재무\n**제1조 (출장비)**\n① 출장비는 5일 내에 정산한다.\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(ingest, "embed_text", lambda *_: [0.1, 0.2])
+    monkeypatch.setattr(ingest, "text_to_sparse", lambda *_: {"indices": [1], "values": [1.0]})
+    monkeypatch.setattr(ingest, "ensure_collection", lambda *_, **__: None)
+    uploaded = []
+    monkeypatch.setattr(
+        ingest,
+        "upsert_chunk_vectors",
+        lambda _url, _name, points: uploaded.extend(points),
+    )
+    settings = SimpleNamespace(
+        ollama_base_url="http://ollama.test",
+        embedding_model="bge-m3",
+        qdrant_url="http://qdrant.test",
+        qdrant_collection="chunks",
+    )
+
+    result = ingest.ingest_directory(tmp_path, settings=settings)
+
+    assert result.vectors_inserted == 2
+    assert len({point["id"] for point in uploaded}) == 2
+    assert "연차는 3일" in uploaded[0]["payload"]["parent_text"]
+    assert "출장비는 5일" in uploaded[1]["payload"]["parent_text"]

@@ -201,13 +201,18 @@ def records_to_chunks(
 ) -> list[dict[str, Any]]:
     """파싱된 조 레코드를 parent(조 전체) + child(항) 청크로 변환한다."""
     chunks: list[dict[str, Any]] = []
+    article_occurrences: dict[str, int] = {}
     for rec in records:
         meta = _base_meta(rec)
-        parent_id = f"jo-{rec['jo_no']}"
+        base_id = f"jo-{rec['jo_no']}"
+        article_occurrences[base_id] = article_occurrences.get(base_id, 0) + 1
+        occurrence = article_occurrences[base_id]
+        parent_id = base_id if occurrence == 1 else f"{base_id}-occ-{occurrence}"
         full_text = _jo_full_text(rec, table_summary)
 
         chunks.append({"id": parent_id, "type": "parent", "text": full_text, "metadata": meta})
 
+        hang_occurrences: dict[int, int] = {}
         for hang in rec["hangs"]:
             hang_text = hang["text"]
             if not hang_text.strip():
@@ -217,9 +222,15 @@ def records_to_chunks(
             child_meta = dict(meta)
             child_meta["hang_no"] = hang["hang_no"]
             child_meta["hang_label"] = hang["label"]
+            hang_no = hang["hang_no"]
+            hang_occurrences[hang_no] = hang_occurrences.get(hang_no, 0) + 1
+            hang_occurrence = hang_occurrences[hang_no]
+            child_id = f"{parent_id}-hang-{hang_no}"
+            if hang_occurrence > 1:
+                child_id = f"{child_id}-occ-{hang_occurrence}"
             chunks.append(
                 {
-                    "id": f"{parent_id}-hang-{hang['hang_no']}",
+                    "id": child_id,
                     "type": "child",
                     "parent_id": parent_id,
                     "text": hang_text,

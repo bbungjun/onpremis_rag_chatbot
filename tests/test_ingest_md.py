@@ -249,11 +249,11 @@ def test_ingest_cli_passes_reset_flag(monkeypatch):
     monkeypatch.setattr(
         ingest,
         "ingest_directory",
-        lambda docs_path, reset=False: calls.append((docs_path, reset)),
+        lambda docs_path, reset=False, batch_size=128: calls.append((docs_path, reset, batch_size)),
     )
 
     assert ingest.main(["datasets/docs", "--reset"]) == 0
-    assert calls == [("datasets/docs", True)]
+    assert calls == [("datasets/docs", True, 128)]
 
 
 def test_repository_regulations_corpus_is_present_and_dense():

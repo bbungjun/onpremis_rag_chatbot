@@ -7,7 +7,7 @@
   편 : '# 제N편 ...'
   장 : '## 제N장 ...'
   절 : '### 제N절 ...'
-  조 : '**제N조 (제목)**'
+  조 : '**제N조 (제목)**' 또는 '**제N조의M (제목)**'
   항 : '① [라벨] 본문 ...'  (원문자 ①~⑳로 시작)
   호 : '1. ...'             (항 본문 내부에 포함, 별도 청크로 쪼개지 않음)
 """
@@ -23,7 +23,7 @@ _CIRCLED_INDEX = {ch: i + 1 for i, ch in enumerate(CIRCLED)}
 RE_PYEON = re.compile(r"^#\s+(제\d+편.*)$")
 RE_JANG = re.compile(r"^##\s+(제\d+장.*)$")
 RE_JEOL = re.compile(r"^###\s+(제\d+절.*)$")
-RE_JO = re.compile(r"^\*\*\s*(제(\d+)조)\s*(?:\(([^)]*)\))?\s*\*\*\s*$")
+RE_JO = re.compile(r"^\*\*\s*(제(\d+)조(?:의(\d+))?)\s*(?:\(([^)]*)\))?\s*\*\*\s*$")
 RE_HANG = re.compile(rf"^([{CIRCLED}])\s*(.*)$")
 RE_HANG_LABEL = re.compile(r"^\[([^\]]*)\]\s*")
 
@@ -107,6 +107,7 @@ def parse_document(md_text: str) -> list[dict[str, Any]]:
     pyeon = jang = jeol = ""
     jo = jo_title = ""
     jo_no = 0
+    jo_sub_no: int | None = None
     body_lines: list[str] = []
     records: list[dict[str, Any]] = []
 
@@ -120,6 +121,7 @@ def parse_document(md_text: str) -> list[dict[str, Any]]:
                 "jeol": jeol,
                 "jo": jo,
                 "jo_no": jo_no,
+                "jo_sub_no": jo_sub_no,
                 "jo_title": jo_title,
                 "body_lines": list(body_lines),
                 "hangs": _split_hang(body_lines),
@@ -156,7 +158,8 @@ def parse_document(md_text: str) -> list[dict[str, Any]]:
             flush_jo()
             jo = jo_match.group(1).strip()
             jo_no = int(jo_match.group(2))
-            jo_title = (jo_match.group(3) or "").strip()
+            jo_sub_no = int(jo_match.group(3)) if jo_match.group(3) else None
+            jo_title = (jo_match.group(4) or "").strip()
             body_lines = []
             continue
         if line.strip() == "---":
@@ -177,7 +180,7 @@ def _path_str(rec: dict[str, Any]) -> str:
 
 
 def _base_meta(rec: dict[str, Any]) -> dict[str, Any]:
-    return {
+    meta = {
         "pyeon": rec["pyeon"],
         "jang": rec["jang"],
         "jeol": rec["jeol"],
@@ -186,6 +189,9 @@ def _base_meta(rec: dict[str, Any]) -> dict[str, Any]:
         "jo_title": rec["jo_title"],
         "path": _path_str(rec),
     }
+    if rec["jo_sub_no"] is not None:
+        meta["jo_sub_no"] = rec["jo_sub_no"]
+    return meta
 
 
 def _jo_full_text(rec: dict[str, Any], table_summary: bool) -> str:
@@ -201,13 +207,20 @@ def records_to_chunks(
 ) -> list[dict[str, Any]]:
     """파싱된 조 레코드를 parent(조 전체) + child(항) 청크로 변환한다."""
     chunks: list[dict[str, Any]] = []
+    article_occurrences: dict[str, int] = {}
     for rec in records:
         meta = _base_meta(rec)
-        parent_id = f"jo-{rec['jo_no']}"
+        base_id = f"jo-{rec['jo_no']}"
+        if rec["jo_sub_no"] is not None:
+            base_id = f"{base_id}-sub-{rec['jo_sub_no']}"
+        article_occurrences[base_id] = article_occurrences.get(base_id, 0) + 1
+        occurrence = article_occurrences[base_id]
+        parent_id = base_id if occurrence == 1 else f"{base_id}-occ-{occurrence}"
         full_text = _jo_full_text(rec, table_summary)
 
         chunks.append({"id": parent_id, "type": "parent", "text": full_text, "metadata": meta})
 
+        hang_occurrences: dict[int, int] = {}
         for hang in rec["hangs"]:
             hang_text = hang["text"]
             if not hang_text.strip():
@@ -217,9 +230,15 @@ def records_to_chunks(
             child_meta = dict(meta)
             child_meta["hang_no"] = hang["hang_no"]
             child_meta["hang_label"] = hang["label"]
+            hang_no = hang["hang_no"]
+            hang_occurrences[hang_no] = hang_occurrences.get(hang_no, 0) + 1
+            hang_occurrence = hang_occurrences[hang_no]
+            child_id = f"{parent_id}-hang-{hang_no}"
+            if hang_occurrence > 1:
+                child_id = f"{child_id}-occ-{hang_occurrence}"
             chunks.append(
                 {
-                    "id": f"{parent_id}-hang-{hang['hang_no']}",
+                    "id": child_id,
                     "type": "child",
                     "parent_id": parent_id,
                     "text": hang_text,

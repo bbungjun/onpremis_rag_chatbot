@@ -22,6 +22,7 @@
 | 실패 재현 | 변경 전 서버 답변 route 3개와 health의 추가 공급자 필드가 발견됐고, 새 로컬/Gemini 계약 테스트 4개가 실패했다. |
 | Python 테스트 | `PYTHONUTF8=1 python -m pytest -q`: `300 passed, 1 skipped` (최종 실행 6.49초). 제거된 전용 테스트 때문에 총 개수가 줄었으며 품질 변화 지표가 아니다. |
 | Ruff | `ruff check --output-format=github .` 및 `ruff format --check .` 통과. |
+| PR CI | [GitHub Actions 실행 35254829628](https://github.com/bbungjun/onpremis_rag_chatbot/actions/runs/35254829628)에서 lint와 test가 모두 통과했다(커밋 `da5d521`). |
 | 정적 검색 | `git grep -in -E`로 제거 대상 공급자 명칭, 모델 ID, SDK 패키지명과 전용 마운트 키를 검색한 결과 0건. |
 | SVG | `xml.etree.ElementTree.parse('docs/infra-architecture-ppt.svg')` 통과. |
 | 발표 화면 JS | `node --check presentation/static/presentation.js` 통과. |

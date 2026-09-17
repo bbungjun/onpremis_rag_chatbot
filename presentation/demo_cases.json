@@ -8,38 +8,6 @@
         "department": "hr",
         "category": "leave",
         "security_level": "internal"
-      },
-      "takeaway": "같은 문서 근거를 쓰면 두 모델 답변의 핵심은 일치하고, 차이는 주로 속도와 운영 방식에서 드러납니다.",
-      "shared_sources": [
-        {
-          "source_path": "datasets/docs/hr/leave-policy.md",
-          "chunk_id": "doc:datasets/docs/hr/leave-policy.md:chunk:0000",
-          "score": 0.91
-        }
-      ],
-      "local": {
-        "label": "Ollama + Qwen",
-        "answer": "문서에 따르면 연차는 사용 예정일 3영업일 전까지 신청해야 합니다. 긴급한 사유가 있으면 예외 승인을 받을 수 있습니다.",
-        "generation_seconds": 28.7,
-        "sources": [
-          {
-            "source_path": "datasets/docs/hr/leave-policy.md",
-            "chunk_id": "doc:datasets/docs/hr/leave-policy.md:chunk:0000",
-            "score": 0.91
-          }
-        ]
-      },
-      "api": {
-        "label": "AWS Bedrock",
-        "answer": "연차는 사용 예정일 기준 3영업일 전까지 신청하는 것이 원칙입니다. 긴급 상황은 별도 승인 절차를 통해 예외 처리될 수 있습니다.",
-        "generation_seconds": 2.4,
-        "sources": [
-          {
-            "source_path": "datasets/docs/hr/leave-policy.md",
-            "chunk_id": "doc:datasets/docs/hr/leave-policy.md:chunk:0000",
-            "score": 0.91
-          }
-        ]
       }
     },
     {
@@ -50,38 +18,6 @@
         "department": "hr",
         "category": "remote-work",
         "security_level": "internal"
-      },
-      "takeaway": "발표에서는 출처가 함께 표시되므로 모델 답변이 회사 문서에 묶여 있음을 바로 확인할 수 있습니다.",
-      "shared_sources": [
-        {
-          "source_path": "datasets/docs/hr/remote-work-policy.md",
-          "chunk_id": "doc:datasets/docs/hr/remote-work-policy.md:chunk:0000",
-          "score": 0.89
-        }
-      ],
-      "local": {
-        "label": "Ollama + Qwen",
-        "answer": "재택근무는 사전에 팀장 승인을 받고, 필요한 경우 근무 일정과 업무 계획을 공유해야 합니다.",
-        "generation_seconds": 31.2,
-        "sources": [
-          {
-            "source_path": "datasets/docs/hr/remote-work-policy.md",
-            "chunk_id": "doc:datasets/docs/hr/remote-work-policy.md:chunk:0000",
-            "score": 0.89
-          }
-        ]
-      },
-      "api": {
-        "label": "AWS Bedrock",
-        "answer": "재택근무를 하려면 사전 승인 절차를 거치고 팀장에게 일정과 업무 계획을 공유해야 합니다.",
-        "generation_seconds": 2.8,
-        "sources": [
-          {
-            "source_path": "datasets/docs/hr/remote-work-policy.md",
-            "chunk_id": "doc:datasets/docs/hr/remote-work-policy.md:chunk:0000",
-            "score": 0.89
-          }
-        ]
       }
     }
   ]

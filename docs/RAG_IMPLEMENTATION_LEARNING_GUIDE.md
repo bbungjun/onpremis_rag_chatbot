@@ -20,11 +20,11 @@
 | --- | --- | --- |
 | 문서 색인 | Markdown을 조·항으로 나누고 vector를 Qdrant에 저장 | `app/chunking.py`, `scripts/ingest_md.py` |
 | 기본 RAG 실행 | 질문 해석, 검색, parent 확장, Qwen 답변 생성 | `app/rag_pipeline.py` |
-| 외부 시스템 adapter | Ollama embedding/Qwen, Qdrant, Gemini, Bedrock 호출 | `app/embeddings.py`, `app/qwen_client.py`, `app/vector_store.py` |
+| 외부 시스템 adapter | Ollama embedding/Qwen, Qdrant, Gemini 호출 | `app/embeddings.py`, `app/qwen_client.py`, `app/vector_store.py` |
 | 실행 진입점 | CLI, FastAPI, Streamlit UI | `scripts/ask_rag.py`, `app/server.py`, `frontend/streamlit_app.py` |
 | 평가 | 검색 전략 비교, ranking metric, reranker, Judge, report | `app/retrieval_*.py`, `app/reranker.py`, `app/local_judge.py` |
 
-기본 제품 경로는 Ollama/Qwen이다. Gemini와 Bedrock은 비교·발표를 위한 별도 경로이며,
+기본 제품 경로는 Ollama/Qwen이다. Gemini는 비교·발표를 위한 별도 경로이며,
 현재 MVP의 on-premise 핵심 경로와 혼동하지 않는다.
 
 ## 3. 두 개의 핵심 데이터 흐름

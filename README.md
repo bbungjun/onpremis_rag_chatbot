@@ -1,11 +1,15 @@
 # llmenhance
 
-사내 규정집을 근거로 직원의 정책 질문에 답하는 on-premise RAG 챗봇입니다.
+사내 규정집을 근거로 직원의 정책 질문에 답하는 로컬 자가 호스팅 RAG 챗봇 MVP입니다.
 
 일반 RAG 데모가 아니라 "연차 신청은 며칠 전까지 해야 하나요?" 같은 실제 사내 질문에
 검색된 규정 조문만 근거로 답하고, 모든 답변에 출처 조항을 붙이며, 문서에 없으면
 "문서에서 확인되지 않습니다"라고 답하는 것이 목표입니다. 답변 생성 모델(Qwen)과
-임베딩 모델(bge-m3)은 모두 로컬 Ollama에서 실행되어 사내 문서가 외부로 나가지 않습니다.
+임베딩 모델(bge-m3)은 기본 경로에서 호스트 Ollama로 실행됩니다. 실제 회사 문서의
+외부 전송 방지와 접근 통제는 배포 설정을 검증해야 합니다.
+
+문서 규모, Qdrant 선정, HWP 파싱, 조·항 청킹, 보안·비용 목표의 선택 근거는
+[RAG 아키텍처 설계 근거](docs/RAG_ARCHITECTURE_RATIONALE.md)에 정리했습니다.
 
 ![Qwen Live QA](docs/assets/qwen_ver.gif)
 
@@ -217,6 +221,7 @@ If you are a CLI coding agent asked to set up this project, follow this section 
 
 The default team environment uses the shared EC2 Ollama endpoint. Do not move Ollama/Qwen into Docker.
 Docker runs the app, Qdrant, ingestion, and tests; Ollama stays outside Docker and is reached through `OLLAMA_BASE_URL`.
+The shared EC2 profile is for development; use the local Ollama profile and an approved deployment boundary for internal documents.
 
 ```powershell
 .\scripts\dev_setup.ps1 -Profile shared-ec2 -ForceEnv

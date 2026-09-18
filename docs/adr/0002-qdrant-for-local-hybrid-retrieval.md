@@ -1,0 +1,3 @@
+# 하이브리드 규정 검색 저장소로 Qdrant를 사용한다
+
+상태: accepted. 현재 요구는 항 단위 dense·sparse 벡터, 규정 경로 필터, RRF 결합을 로컬에서 함께 운영하는 것이다. Qdrant의 한 컬렉션에 두 벡터와 출처 payload를 저장하고 서버의 융합 질의를 사용한다. [Qdrant의 하이브리드 질의](https://qdrant.tech/documentation/search/hybrid-queries/)와 [필터](https://qdrant.tech/documentation/search/filtering/)가 이 구조를 지원한다. PostgreSQL이 이미 운영 표준이라면 [pgvector와 PostgreSQL 전문 검색](https://github.com/pgvector/pgvector#hybrid-search)을 재검토할 수 있고, 훨씬 큰 분산 부하가 실제로 확인되면 [Milvus](https://milvus.io/docs/install_standalone-docker-compose.md)를 비교할 수 있다. 다른 DB와의 동일 조건 성능·비용 비교는 수행하지 않았으므로 Qdrant가 더 빠르다는 결론은 없다. 필터 필드의 payload 인덱스, 접근 제어, 실제 대량 적재는 운영 전 검증 대상이다. [구현](../../app/vector_store.py), [비교 근거](../RAG_ARCHITECTURE_RATIONALE.md).

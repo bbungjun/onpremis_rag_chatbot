@@ -30,6 +30,7 @@
 - Qdrant/pgvector/Milvus의 공식 문서와 Qdrant 보안 안내, GPU VM 요금 페이지를 설계 대안의 출처로 사용했다. 변경 문서 8개의 로컬 상대 링크 검사에서 누락 0건이었다.
 - Windows Python 3.11에서 `HWP_CLI_PATH`와 `PYTHONUTF8=1`을 설정한 `python -m pytest -q`: **321 passed, 1 skipped** (8.41초). `ruff check .`, `ruff format --check .`, `git diff --check`, `docker compose config --quiet`도 통과했다. 이는 문서 변경의 회귀 확인이지 사용자 가치 지표가 아니다.
 - AGENTS.md의 `docker compose up -d`, `docker compose run --rm rag-api pytest -v`, `curl http://localhost:6333`, `docker compose run --rm rag-api python -m app.healthcheck`를 실행했으나 Docker Desktop Linux 엔진 named pipe가 없어 모두 런타임 검증으로 이어지지 못했다. 임시 `.env`는 `.env.example`에서 만들고 검증 후 제거했다.
+- [PR #17](https://github.com/bbungjun/onpremis_rag_chatbot/pull/17)의 [GitHub Actions 실행](https://github.com/bbungjun/onpremis_rag_chatbot/actions/runs/35327035634)에서 lint와 test가 통과했다(초기 문서 커밋 `d797ecc`). CI는 Docker 런타임·비용·보안 검증을 대신하지 않는다.
 
 ## After / 결과
 

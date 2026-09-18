@@ -198,7 +198,7 @@ def test_reset_rejects_empty_input_before_deleting_collection(tmp_path, monkeypa
     monkeypatch.setattr(ingest, "delete_collection_if_exists", lambda *_: deleted.append(True))
     settings = SimpleNamespace(qdrant_url="http://qdrant.test", qdrant_collection="chunks")
 
-    with pytest.raises(ValueError, match="No Markdown, HWP, or HWPX"):
+    with pytest.raises(ValueError, match="No supported documents"):
         ingest.ingest_directory(tmp_path, settings=settings, reset=True)
 
     assert deleted == []

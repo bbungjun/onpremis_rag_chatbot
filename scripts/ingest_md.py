@@ -37,7 +37,7 @@ def discover_source_files(root_path: str | Path) -> list[Path]:
     return sorted(
         path
         for path in root.rglob("*")
-        if path.is_file() and path.suffix.lower() in {".md", ".hwp", ".hwpx"}
+        if path.is_file() and path.suffix.lower() in {".md", ".hwp", ".hwpx", ".docx", ".pdf"}
     )
 
 
@@ -53,7 +53,8 @@ def ingest_directory(
     settings = settings or Settings.from_env()
     source_files = discover_source_files(root_path)
     if not source_files:
-        raise ValueError(f"No Markdown, HWP, or HWPX documents found: {root_path}")
+        raise ValueError(f"No supported documents found: {root_path}")
+    _reject_ambiguous_source_variants(source_files)
 
     documents_indexed = 0
     chunks_created = 0
@@ -149,9 +150,9 @@ def print_result(result: IngestionResult) -> None:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        description="Ingest Markdown, HWP 5.0, and HWPX regulations into the RAG vector store."
+        description="Ingest Markdown, HWP, HWPX, DOCX, and text PDF regulations into Qdrant."
     )
-    parser.add_argument("docs_path", help="Directory containing Markdown, HWP, or HWPX documents")
+    parser.add_argument("docs_path", help="Directory containing supported regulation documents")
     parser.add_argument("--batch-size", type=int, default=128)
     parser.add_argument(
         "--reset",
@@ -174,6 +175,20 @@ def _source_path(path: str | Path) -> str:
 
 def _document_id(source_path: str) -> str:
     return f"doc:{source_path}"
+
+
+def _reject_ambiguous_source_variants(source_files: list[Path]) -> None:
+    """같은 규정의 편집본과 배포본을 동시에 색인하지 않도록 한다."""
+    variants: dict[tuple[Path, str], set[str]] = {}
+    for path in source_files:
+        suffix = path.suffix.lower()
+        if suffix not in {".docx", ".pdf"}:
+            continue
+        key = (path.parent.resolve(), path.stem.casefold())
+        variants.setdefault(key, set()).add(suffix)
+    for (directory, stem), formats in variants.items():
+        if formats == {".docx", ".pdf"}:
+            raise ValueError(f"Ambiguous source variants (DOCX/PDF): {directory / stem}")
 
 
 def _require_structured_chunks(chunks: list[dict], path: Path) -> None:

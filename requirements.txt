@@ -2,7 +2,9 @@ fastapi
 google-genai
 httpx
 kiwipiepy
+pypdf==6.10.0
 pytest
+python-docx==1.2.0
 python-dotenv
 qdrant-client
 pyyaml

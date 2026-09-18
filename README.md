@@ -16,7 +16,8 @@
 ## 아키텍처
 
 ```text
-구조화 마크다운 또는 HWP 5.0/HWPX 규정집 (HWP/HWPX는 로컬에서 Markdown으로 추출)
+Markdown, HWP 5.0/HWPX, DOCX 또는 텍스트 PDF 규정집
+-> 형식별 텍스트 추출과 조·항 구조 검증
 -> HWP/HWPX 표·번호 목록·각주·이미지 글자/캡션을 검색 가능한 텍스트로 보강
 -> 구조 기반 parent-child 청킹  (child = 항, parent = 조)
 -> child 임베딩: dense(bge-m3, Ollama) + sparse(BM25, kiwipiepy 형태소)
@@ -50,6 +51,16 @@ Docker 이미지에는 OCR 실행 파일과 언어 데이터를 설치합니다.
 검증 범위와 재현 명령은 [HWP 서식 파싱 기록](docs/portfolio/2026-09-18-hwp-rich-format.md)에 있습니다.
 HWPX도 같은 수집 경로로 읽을 수 있습니다. [HWPX 파싱 학습 1단계](docs/HWPX_PARSING_STUDY.md)는
 ZIP/XML 내부를 살펴보고 텍스트 노드만 추출할 때 사라지는 정보를 보여줍니다.
+
+## DOCX와 텍스트 PDF 입력
+
+DOCX는 문단과 단순 표를 원래 순서대로 읽고, 텍스트 PDF는 페이지의 선택 가능한 글자를 읽습니다.
+두 형식 모두 제N조와 ① 같은 규정 구조가 없으면 색인을 중단합니다. 스캔 PDF에는 OCR이 필요하며,
+DOCX의 탐지 가능한 자동 번호·병합 표·본문 인라인 이미지는 이번 단계에서 명시적으로 거부합니다. PDF 표의 열·값 관계와
+페이지 좌표 인용도 아직 검증하지 않았습니다.
+같은 폴더에 `leave.docx`와 `leave.pdf`처럼 이름 줄기가 같은 파일이 있으면 중복 색인을 막기 위해
+오류를 냅니다. 편집본과 배포본 중 권위 있는 한 파일을 선택해 색인해야 합니다.
+검증 범위는 [DOCX·텍스트 PDF 수집 기록](docs/portfolio/2026-09-18-docx-text-pdf-ingestion.md)에 남겼습니다.
 
 ## 평가 결과
 

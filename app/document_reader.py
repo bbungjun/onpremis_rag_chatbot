@@ -34,12 +34,12 @@ def read_document(
     hwp_cli: str | None = None,
     ocr_image: Callable[[Path], str] | None = None,
 ) -> str:
-    """Markdown 또는 HWP 5.0을 읽는다. HWP 구조가 추출되지 않으면 실패한다."""
+    """Markdown, HWP 5.0, HWPX를 읽는다. 조·항 구조가 추출되지 않으면 실패한다."""
     source = Path(path)
     suffix = source.suffix.lower()
     if suffix == ".md":
         return source.read_text(encoding="utf-8")
-    if suffix != ".hwp":
+    if suffix not in {".hwp", ".hwpx"}:
         raise ValueError(f"Unsupported document format: {source.suffix}")
 
     command = hwp_cli or os.environ.get("HWP_CLI_PATH", "hwp")
@@ -56,7 +56,7 @@ def read_document(
     except FileNotFoundError as exc:
         raise RuntimeError("HWP CLI를 찾을 수 없습니다. HWP_CLI_PATH를 설정하세요.") from exc
     except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
-        raise RuntimeError(f"HWP 추출 실패: {source}") from exc
+        raise RuntimeError(f"한글 문서 추출 실패: {source}") from exc
 
     extracted = result.stdout
     if _IMAGE_REFERENCE.search(extracted):
@@ -85,7 +85,7 @@ def read_document(
                 subprocess.CalledProcessError,
                 subprocess.TimeoutExpired,
             ) as exc:
-                raise RuntimeError(f"HWP 이미지 추출 실패: {source}") from exc
+                raise RuntimeError(f"한글 문서 이미지 추출 실패: {source}") from exc
             extracted = normalize_rich_markdown(
                 output.read_text(encoding="utf-8"),
                 media_root=Path(directory),
@@ -98,17 +98,18 @@ def read_document(
     chunks = chunk_text(normalized)
     parent_count = sum(chunk["type"] == "parent" for chunk in chunks)
     if not parent_count or not any(chunk["type"] == "child" for chunk in chunks):
-        raise ValueError(f"HWP에서 제N조/항 구조를 찾지 못했습니다: {source}")
+        raise ValueError(f"한글 문서에서 제N조/항 구조를 찾지 못했습니다: {source}")
     heading_count = sum(_article_candidates(line) for line in result.stdout.splitlines())
     if heading_count != parent_count:
         raise ValueError(
-            f"HWP 조 제목 수 {heading_count}개와 파싱된 조 {parent_count}개가 다릅니다: {source}"
+            f"한글 문서 조 제목 수 {heading_count}개와 "
+            f"파싱된 조 {parent_count}개가 다릅니다: {source}"
         )
     return normalized
 
 
 def normalize_hwp_markdown(extracted: str) -> str:
-    """HWP 자동 제목 번호를 제거해 기존 편/장/절/조/항 청커에 맞춘다."""
+    """HWP/HWPX 자동 제목 번호를 제거해 기존 편/장/절/조/항 청커에 맞춘다."""
     lines: list[str] = []
     for original in extracted.splitlines():
         for segment in _split_article_segments(original):

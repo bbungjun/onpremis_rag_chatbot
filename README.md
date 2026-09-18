@@ -12,7 +12,8 @@
 ## 아키텍처
 
 ```text
-구조화 마크다운 또는 HWP 5.0 규정집 (HWP는 로컬에서 구조화 Markdown으로 추출)
+구조화 마크다운 또는 HWP 5.0/HWPX 규정집 (HWP/HWPX는 로컬에서 Markdown으로 추출)
+-> HWP/HWPX 표·번호 목록·각주·이미지 글자/캡션을 검색 가능한 텍스트로 보강
 -> 구조 기반 parent-child 청킹  (child = 항, parent = 조)
 -> child 임베딩: dense(bge-m3, Ollama) + sparse(BM25, kiwipiepy 형태소)
 -> Qdrant 하이브리드 검색 (dense + BM25, RRF 결합) + payload 메타데이터 필터
@@ -36,6 +37,15 @@
 기본 생성물은 정책 1,000개를 편/장/절로 묶은 HWP 규정집 1권입니다. 실제 회사 규정이 아니며 기존 평가 결과에 포함되지 않았습니다.
 HWP 생성, 구조 검증, 배치 색인 절차와 평가 한계는 [대규모 HWP 코퍼스 안내](docs/HWP_LARGE_CORPUS.md)에 기록했습니다.
 HWP의 한 문단에 합쳐진 조·항과 `제N조의M` 가지 조항도 파싱하며, 조 제목 누락이 발견되면 색인을 중단합니다.
+서식이 있는 HWP는 표의 열·값 관계와 병합 범위, 번호 목록 순서, 참조 위치의 각주를 보존합니다.
+이미지는 로컬 Tesseract의 한국어·영어 OCR로 글자를 읽고 인접 캡션을 같은 조항에 넣습니다.
+Docker 이미지에는 OCR 실행 파일과 언어 데이터를 설치합니다. 호스트에서 직접 색인할 때는 Tesseract와
+`kor`, `eng` 언어 데이터를 설치하고, 필요하면 `TESSERACT_CLI_PATH`를 설정해야 합니다.
+이미지 추출이나 OCR 실행이 실패하면 해당 문서의 색인을 중단합니다. 그림·흐름도의 의미 해석과 실제
+사내 문서의 OCR 정확도는 아직 평가하지 않았습니다.
+검증 범위와 재현 명령은 [HWP 서식 파싱 기록](docs/portfolio/2026-09-18-hwp-rich-format.md)에 있습니다.
+HWPX도 같은 수집 경로로 읽을 수 있습니다. [HWPX 파싱 학습 1단계](docs/HWPX_PARSING_STUDY.md)는
+ZIP/XML 내부를 살펴보고 텍스트 노드만 추출할 때 사라지는 정보를 보여줍니다.
 
 ## 평가 결과
 

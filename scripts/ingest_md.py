@@ -37,7 +37,7 @@ def discover_source_files(root_path: str | Path) -> list[Path]:
     return sorted(
         path
         for path in root.rglob("*")
-        if path.is_file() and path.suffix.lower() in {".md", ".hwp"}
+        if path.is_file() and path.suffix.lower() in {".md", ".hwp", ".hwpx"}
     )
 
 
@@ -53,7 +53,7 @@ def ingest_directory(
     settings = settings or Settings.from_env()
     source_files = discover_source_files(root_path)
     if not source_files:
-        raise ValueError(f"No Markdown or HWP documents found: {root_path}")
+        raise ValueError(f"No Markdown, HWP, or HWPX documents found: {root_path}")
 
     documents_indexed = 0
     chunks_created = 0
@@ -149,9 +149,9 @@ def print_result(result: IngestionResult) -> None:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        description="Ingest Markdown and HWP 5.0 regulations into the RAG vector store."
+        description="Ingest Markdown, HWP 5.0, and HWPX regulations into the RAG vector store."
     )
-    parser.add_argument("docs_path", help="Directory containing Markdown or HWP documents")
+    parser.add_argument("docs_path", help="Directory containing Markdown, HWP, or HWPX documents")
     parser.add_argument("--batch-size", type=int, default=128)
     parser.add_argument(
         "--reset",

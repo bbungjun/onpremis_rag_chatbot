@@ -11,6 +11,7 @@ from pathlib import Path
 
 from app.chunking import CIRCLED, chunk_text
 from app.hwp_formatting import normalize_rich_markdown
+from app.office_reader import read_docx_markdown, read_text_pdf
 
 _HEADING = re.compile(
     r"^(#{1,3})\s+(?:\*\*)?(?:\d+(?:-\d+)*\.\s*)?"
@@ -34,14 +35,40 @@ def read_document(
     hwp_cli: str | None = None,
     ocr_image: Callable[[Path], str] | None = None,
 ) -> str:
-    """Markdown, HWP 5.0, HWPX를 읽는다. 조·항 구조가 추출되지 않으면 실패한다."""
+    """규정 문서를 구조화 Markdown으로 읽는다. 조·항이 없으면 실패한다."""
     source = Path(path)
     suffix = source.suffix.lower()
     if suffix == ".md":
         return source.read_text(encoding="utf-8")
-    if suffix not in {".hwp", ".hwpx"}:
+    if suffix == ".docx":
+        raw = read_docx_markdown(source)
+        extracted = normalize_rich_markdown(raw)
+    elif suffix == ".pdf":
+        raw = read_text_pdf(source)
+        extracted = normalize_rich_markdown(raw)
+    elif suffix in {".hwp", ".hwpx"}:
+        raw, extracted = _read_hangul(source, hwp_cli, ocr_image)
+    else:
         raise ValueError(f"Unsupported document format: {source.suffix}")
 
+    normalized = normalize_hwp_markdown(extracted)
+    chunks = chunk_text(normalized)
+    parent_count = sum(chunk["type"] == "parent" for chunk in chunks)
+    if not parent_count or not any(chunk["type"] == "child" for chunk in chunks):
+        raise ValueError(f"문서에서 제N조/항 구조를 찾지 못했습니다: {source}")
+    heading_count = sum(_article_candidates(line) for line in raw.splitlines())
+    if heading_count != parent_count:
+        raise ValueError(
+            f"문서 조 제목 수 {heading_count}개와 파싱된 조 {parent_count}개가 다릅니다: {source}"
+        )
+    return normalized
+
+
+def _read_hangul(
+    source: Path,
+    hwp_cli: str | None,
+    ocr_image: Callable[[Path], str] | None,
+) -> tuple[str, str]:
     command = hwp_cli or os.environ.get("HWP_CLI_PATH", "hwp")
     try:
         result = subprocess.run(
@@ -58,8 +85,8 @@ def read_document(
     except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
         raise RuntimeError(f"한글 문서 추출 실패: {source}") from exc
 
-    extracted = result.stdout
-    if _IMAGE_REFERENCE.search(extracted):
+    raw = result.stdout
+    if _IMAGE_REFERENCE.search(raw):
         with tempfile.TemporaryDirectory(prefix="hwp-media-") as directory:
             output = Path(directory) / "document.md"
             try:
@@ -92,20 +119,8 @@ def read_document(
                 ocr_image=ocr_image,
             )
     else:
-        extracted = normalize_rich_markdown(extracted)
-
-    normalized = normalize_hwp_markdown(extracted)
-    chunks = chunk_text(normalized)
-    parent_count = sum(chunk["type"] == "parent" for chunk in chunks)
-    if not parent_count or not any(chunk["type"] == "child" for chunk in chunks):
-        raise ValueError(f"한글 문서에서 제N조/항 구조를 찾지 못했습니다: {source}")
-    heading_count = sum(_article_candidates(line) for line in result.stdout.splitlines())
-    if heading_count != parent_count:
-        raise ValueError(
-            f"한글 문서 조 제목 수 {heading_count}개와 "
-            f"파싱된 조 {parent_count}개가 다릅니다: {source}"
-        )
-    return normalized
+        extracted = normalize_rich_markdown(raw)
+    return raw, extracted
 
 
 def normalize_hwp_markdown(extracted: str) -> str:

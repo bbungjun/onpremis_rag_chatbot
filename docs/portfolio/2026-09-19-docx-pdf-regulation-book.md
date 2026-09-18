@@ -29,6 +29,7 @@ DOCX는 편/장/절/조를 제목 스타일로, PDF는 선택 가능한 한글 �
 | PDF 이미지 검증 | `pdftoppm -png -r 72`로 890페이지 전부 렌더했다. 모든 PNG가 596×842px이고 빈 페이지 0, 가장자리 8px 이내 내용 0이다. 첫·중간(445)·마지막(890) 페이지를 144DPI로 다시 렌더해 한글 글자, 조항 흐름과 페이지 여백을 눈으로 확인했다. 모든 890페이지를 100% 확대해 수동 검토하지는 않았다. |
 | DOCX 시각 검증 | 번들 `render_docx.py --emit_pdf` 실행은 `soffice.exe`가 번들 PATH에 없어 실패했다. 구조·전체 텍스트 왕복은 검증했지만 페이지 레이아웃은 육안 검증하지 못했다. |
 | 자동화 | Windows Python 3.11, HWP CLI v0.17.0 설정 후 `python -m pytest -q`: **346 passed, 1 skipped** (최종 실행 7.53초). `ruff check .`, `ruff format --check .`, `git diff --check`, `docker compose config --quiet` 통과. pytest 건수는 사용자 가치 지표가 아니다. |
+| PR CI | [GitHub Actions 실행 35392033331](https://github.com/bbungjun/onpremis_rag_chatbot/actions/runs/35392033331)에서 lint와 test가 통과했다(구현 커밋 `63aa6d8`). |
 | Docker 런타임 | `docker compose up -d`, `docker compose run --rm rag-api pytest -v`, `curl http://localhost:6333`, `docker compose run --rm rag-api python -m app.healthcheck`를 시도했다. Docker Desktop Linux 엔진 named pipe가 없어 컨테이너와 Qdrant가 시작되지 않았다. 임시 `.env`는 검증 후 제거했다. |
 
 ## After / 관찰 결과
@@ -38,6 +39,7 @@ HWP와 논리적으로 같은 1,000개 정책의 DOCX·PDF 각 한 권을 만들
 ## 증거와 한계
 
 - [설계](../superpowers/specs/2026-09-19-docx-pdf-regulation-book-design.md), [구현 계획](../superpowers/plans/2026-09-19-docx-pdf-regulation-book-implementation.md), `tests/test_generate_regulation_book_formats.py`.
+- 검토 PR: [#19](https://github.com/bbungjun/onpremis_rag_chatbot/pull/19).
 - 로컬 생성 결과: `output/docx-pdf-regulation-book-1000-20260919/synthetic-regulations-1000.docx` 113,090바이트, SHA-256 `e8c3da8761e654c3c6fddfd75f6460285a0c5ac8874e88f971d7ed3a99b6195b`; `synthetic-regulations-1000.pdf` 1,729,794바이트, SHA-256 `011eec07caee21246e06616ebbc10bd859092b306c45721cad690aa995905472`.
 - `manifest.json` SHA-256 `5562d5b7ed59e9b65b947b9ce08e2f8bd8d7a44406ca96ba724e6133c44abce8`. 생성 조건: 2026-09-19, Windows, Intel Core i5-13600KF(14코어/20스레드), 물리 RAM 31.84GiB, `python-docx` 1.2.0, `reportlab` 4.4.9, `pypdf` 6.10.0, PDF 글꼴 `malgun.ttf`. 모델과 검색 top-k는 실행하지 않았다.
 - 작은 테스트의 기본 PDF 글꼴은 CID 대체 글꼴이라 최종 Malgun PDF의 픽셀과 같지 않다. 합성 템플릿에는 실제 회사 문서의 표·도형·개정 이력·부서 권한과 스캔 이미지가 없다. DOCX 전 페이지의 렌더링, 실제 사내 문서와의 상호 운용성, 대형 코퍼스 색인·검색은 미측정이다.

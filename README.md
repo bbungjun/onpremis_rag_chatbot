@@ -62,6 +62,20 @@ DOCX의 탐지 가능한 자동 번호·병합 표·본문 인라인 이미지�
 오류를 냅니다. 편집본과 배포본 중 권위 있는 한 파일을 선택해 색인해야 합니다.
 검증 범위는 [DOCX·텍스트 PDF 수집 기록](docs/portfolio/2026-09-18-docx-text-pdf-ingestion.md)에 남겼습니다.
 
+### 같은 규정집의 DOCX·PDF 두 버전
+
+`scripts/generate_regulation_book_formats.py`는 기존 합성 정책 1,000개를 한 원문에서 DOCX 1권과
+선택 가능한 텍스트 PDF 1권으로 만듭니다. 실제 회사 규정이 아니며, 두 파일을 동시에 색인하지 않습니다.
+
+```powershell
+python scripts/generate_regulation_book_formats.py --count 1000 `
+  --output output/regulation-book-1000 --font-path C:\Windows\Fonts\malgun.ttf
+```
+
+생성기는 두 파일을 다시 파싱해 조 8,000개·항 24,000개와 개발용 질문 1,000개의 답 문구를 확인합니다.
+`manifest.json`에 파일 해시와 PDF 페이지 수를 기록합니다. 생성 결과는 `output/`에 두어 Git에서
+제외합니다. 실제 생성 결과와 시각 검증 한계는 [DOCX·PDF 규정집 기록](docs/portfolio/2026-09-19-docx-pdf-regulation-book.md)에 있습니다.
+
 ## 평가 결과
 
 50개 held-out 사내 정책 질문으로 검색 전략을 ablation하고, 같은 질문을 Qwen end-to-end로

@@ -32,6 +32,7 @@
 | 수집 경로 | 서로 다른 이름으로 둔 DOCX/PDF 2개를 테스트 대역 임베딩·Qdrant로 흘려 8개 청크와 4개 child 포인트, 파일별 출처 제목을 확인했다. 실제 Qdrant 연결은 아니다. |
 | 기존 대형 HWP 회귀 | 같은 합성 단일 HWP에서 parent 8,000개, child 24,000개, 고유 ID 32,000개와 개발용 질문의 목표 조항·답 문구 1,000/1,000 매핑을 유지했다. DOCX/PDF 품질 증거는 아니다. |
 | 자동화 | Windows Python 3.11, HWP CLI v0.17.0. `HWP_CLI_PATH`, `PYTHONUTF8=1`로 `python -m pytest -q`: **344 passed, 1 skipped** (최종 실행 9.60초). `ruff check .`, `ruff format --check .`, `git diff --check`, 변경 문서 링크 검사(누락 0건), `docker compose config --quiet` 통과. |
+| PR CI | [GitHub Actions 실행 35347332865](https://github.com/bbungjun/onpremis_rag_chatbot/actions/runs/35347332865)에서 lint와 test가 모두 통과했다(구현 커밋 `ed9f2d2`). |
 | Docker 런타임 | `docker compose up -d`, `docker compose run --rm rag-api pytest -v`, `curl http://localhost:6333`, `docker compose run --rm rag-api python -m app.healthcheck`를 시도했다. Docker Desktop Linux 엔진 named pipe가 없어 컨테이너와 Qdrant에 연결하지 못했다. 임시 `.env`는 검증 후 제거했다. |
 
 ## After / 관찰 결과
@@ -41,6 +42,7 @@
 ## 증거와 한계
 
 - 설계: [설계 기록](../superpowers/specs/2026-09-18-docx-text-pdf-ingestion-design.md), [구현 계획](../superpowers/plans/2026-09-18-docx-text-pdf-ingestion-implementation.md), `tests/test_docx_pdf_documents.py`.
+- 검토 PR: [#18](https://github.com/bbungjun/onpremis_rag_chatbot/pull/18).
 - 합성 DOCX SHA-256: `a5781a80fccceff7ba0fa2cd8ff77f9066869678eb06e5e841bbe8f40bd54664`. 합성 PDF SHA-256: `4715e5b9158512a98807cb3f856892aca39d9a38a487183724aca13e1c89fd40`.
 - PDF fixture는 표를 화면에 포함하지만 이번 pypdf 경로는 표의 셀 관계를 복원하지 않는다. 실제 PDF의 다단 배치, 반복 머리말, 숨은 텍스트, 페이지 좌표 인용과 스캔 OCR도 검증하지 않았다.
 - DOCX의 사용자 정의 번호·떠 있는 이미지와 각주를 완전 탐지하지 못할 수 있다. 동일 줄기 감지는 이름이 다른 중복본을 발견하지 못한다. 실제 사내 문서, Qdrant 대량 색인, 검색 Recall, Qwen 답변 품질과 운영 비용은 이번 단계에서 측정하지 않았다.

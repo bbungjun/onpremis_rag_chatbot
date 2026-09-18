@@ -199,6 +199,9 @@ requirement_lookup   4    4.1%
    "회식비는 얼마까지 처리되나요?"는 조회 질문인데 "되나요" 때문에 eligibility_check
    로 분류된다. 이런 건 이 수치에 잡히지 않는다.
 
+   후속 측정에서 별도 gold 라벨을 추가해 정확도를 측정했다. 현재 결과와 annotation 한계는
+   `docs/portfolio/2026-09-08-intent-classification-accuracy.md`에 기록한다.
+
 3. 변형 48건은 손으로 만든 것이다.
    원문은 실재하고 base_id 로 추적되지만, 변형 자체는 실제 사용자 입력 로그가 아니다.
    실제 오타 분포와 다를 수 있다.

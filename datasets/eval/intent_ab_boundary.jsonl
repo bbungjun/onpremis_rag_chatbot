@@ -1,0 +1,4 @@
+{"id":"ab01","question":"내일 연차를 쓰려고 지금 신청하면 최소 신청 기한을 충족하나요?","type":"relative_time","group":"annual_leave_boundary","gold_jo":["jo-39"],"expected":"최소 3영업일 전 기준을 밝히고 내일은 부족하다고 설명. 승인/거절 결과를 새로 만들지 않는다."}
+{"id":"ab02","question":"이틀 뒤에 연차를 사용하려는데 지금 신청해도 기한에 맞나요?","type":"relative_time","group":"annual_leave_boundary","gold_jo":["jo-39"],"expected":"2일 뒤는 최소 3영업일 전 기준보다 짧음을 설명. 별도 예외나 승인 결과를 만들지 않는다."}
+{"id":"ab03","question":"정확히 3영업일 뒤에 연차를 쓰려고 지금 신청합니다. 최소 사전 신청 기한은 충족하나요?","type":"relative_time","group":"annual_leave_boundary","gold_jo":["jo-39"],"expected":"정확히 3영업일 전이면 최소 기한은 충족함을 설명하되 휴가 자동 승인까지 보장하지 않는다."}
+{"id":"ab04","question":"연차를 4일 뒤에 쓰려고 지금 신청하면 기한을 무조건 충족하나요? 그 사이 주말과 공휴일 여부는 아직 모르겠습니다.","type":"relative_time","group":"annual_leave_boundary","gold_jo":["jo-39"],"expected":"3영업일 기준과 달력일 4일을 구분하고 주말/공휴일 확인이 필요하므로 무조건 충족한다고 단정하지 않는다."}

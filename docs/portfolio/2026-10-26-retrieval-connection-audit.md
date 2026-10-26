@@ -122,6 +122,8 @@ Docker backend 로그에서 Inference manager의 `dockerInference` 소켓 초기
 
 ## 실행 조건과 증거
 
+- 진단 구현 커밋: [ffdfe13](https://github.com/bbungjun/onpremis_rag_chatbot/commit/ffdfe132c670ac0fa4bbf4860a1fe87bd5788c56).
+- 검토용 [Draft PR #21](https://github.com/bbungjun/onpremis_rag_chatbot/pull/21).
 - 원래 소스: `feat/intent-classification-accuracy`, HEAD
   `e2b00943e519ad951e94cb3d627b8e0ccfea1982` 및 기존 사용자 변경 상태.
   실제 실행 파일별 해시는 `run.json`에 기록했다.

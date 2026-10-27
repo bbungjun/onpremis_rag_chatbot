@@ -47,3 +47,12 @@
   `curl.exe --max-time 5 http://localhost:6333`은 exit 7이었다.
   원본 검사 결과는 git에서 제외된 `reports/retrieval-eval/decision-records-main-20261028/`에 보존했다.
 - 서버 동작, RAG 성능, 생성 품질 또는 Production 반영을 검증한 작업이 아니다.
+
+## D05 — main 반영 추적
+
+- 문서 전용 구현 커밋: `dcf9dbb`.
+- 반영 PR: [#22](https://github.com/bbungjun/onpremis_rag_chatbot/pull/22), base=main.
+- [PR 검사](https://github.com/bbungjun/onpremis_rag_chatbot/pull/22/checks)로 CI 결과를,
+  PR의 병합 상태·merge commit과 원격 main의 실제 파일로 반영 결과를 추적한다.
+- PR diff는 AGENTS.md 및 이 디렉터리의 Markdown 3개로 한정된다.
+  기존 RAG 구현의 [PR #21](https://github.com/bbungjun/onpremis_rag_chatbot/pull/21)은 별도 Draft다.

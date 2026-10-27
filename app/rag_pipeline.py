@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Callable
-from dataclasses import dataclass
 from time import perf_counter
 from typing import Any, TypeVar
 
 from app.config import Settings
 from app.embeddings import embed_text
+from app.evidence_context import EvidenceSource as RetrievedParent
+from app.evidence_context import select_evidence
 from app.llm import LLMClient, OllamaLLM
 from app.question_interpreter import InterpretedQuestion, interpret_question
 from app.qwen_client import chat_qwen
@@ -67,17 +68,6 @@ context의 기준과 canonical_question의 사용자 조건을 비교해 충족 
 "문서 기준상 충족하지 않습니다"처럼 표현하라.
 context에서 확인할 수 없는 내용은 추측하지 말고 "{FALLBACK_ANSWER}"라고 답하라.
 답변은 간결하게 작성하고, 근거가 된 조(예: 제5조)를 함께 밝혀라."""
-
-
-@dataclass(frozen=True)
-class RetrievedParent:
-    chunk_id: str
-    source_path: str
-    title: str
-    jo: str
-    path: str
-    score: float
-    text: str
 
 
 def answer_question(
@@ -257,20 +247,17 @@ def _build_context(
     *,
     max_prompt_chars: int | None = None,
 ) -> tuple[list[RetrievedParent], str]:
-    parents = _expand_to_parents(search_results, top_k)
+    parents = _expand_to_parents(search_results, len(search_results))
     if not parents:
         return [], ""
     interpreted_question = _ensure_interpreted_question(question)
-    prompt_parents = parents
-    user_prompt = _build_user_prompt(interpreted_question, prompt_parents)
-    while (
-        max_prompt_chars is not None
-        and len(user_prompt) > max_prompt_chars
-        and len(prompt_parents) > 1
-    ):
-        prompt_parents = prompt_parents[:-1]
-        user_prompt = _build_user_prompt(interpreted_question, prompt_parents)
-    return prompt_parents, user_prompt
+    return select_evidence(
+        interpreted_question.original_question,
+        parents,
+        top_k,
+        max_prompt_chars,
+        lambda selected: _build_user_prompt(interpreted_question, selected),
+    )
 
 
 def _expand_to_parents(search_results: list[dict], top_k: int) -> list[RetrievedParent]:
@@ -305,6 +292,7 @@ def _expand_to_parents(search_results: list[dict], top_k: int) -> list[Retrieved
                 path=str(payload.get("path", "")),
                 score=float(result.get("score", 0.0)),
                 text=text,
+                document_id=document_id,
             )
         )
         if len(parents) >= top_k:

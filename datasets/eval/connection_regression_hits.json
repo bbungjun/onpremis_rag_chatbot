@@ -1,0 +1,448 @@
+{
+  "provenance": "2026-10-26 Qdrant Local diagnosis; fixed failing retrieval inputs, not a holdout",
+  "results_sha256": "5e63a0f0be85de5612ad0cdd4455f6cc0c653b1bf21b9c9a442d661ebcbd5aea",
+  "cases": [
+    {
+      "id": "m01",
+      "question": "국내 출장에서 숙박비 한도는 얼마이고, 다녀온 뒤 언제까지 어떤 적격 증빙으로 정산해야 하나요?",
+      "gold_jo": [
+        "jo-80",
+        "jo-82",
+        "jo-64"
+      ],
+      "hits": [
+        {
+          "child_id": "jo-80-hang-3",
+          "parent_id": "jo-80",
+          "score": 0.75
+        },
+        {
+          "child_id": "jo-82-hang-3",
+          "parent_id": "jo-82",
+          "score": 0.7
+        },
+        {
+          "child_id": "jo-80-hang-4",
+          "parent_id": "jo-80",
+          "score": 0.4583333333333333
+        },
+        {
+          "child_id": "jo-81-hang-3",
+          "parent_id": "jo-81",
+          "score": 0.45
+        },
+        {
+          "child_id": "jo-64-hang-3",
+          "parent_id": "jo-64",
+          "score": 0.41025641025641024
+        },
+        {
+          "child_id": "jo-64-hang-4",
+          "parent_id": "jo-64",
+          "score": 0.30952380952380953
+        },
+        {
+          "child_id": "jo-80-hang-1",
+          "parent_id": "jo-80",
+          "score": 0.30952380952380953
+        },
+        {
+          "child_id": "jo-81-hang-1",
+          "parent_id": "jo-81",
+          "score": 0.18382352941176472
+        },
+        {
+          "child_id": "jo-82-hang-4",
+          "parent_id": "jo-82",
+          "score": 0.1625
+        },
+        {
+          "child_id": "jo-82-hang-2",
+          "parent_id": "jo-82",
+          "score": 0.1111111111111111
+        },
+        {
+          "child_id": "jo-30-hang-4",
+          "parent_id": "jo-30",
+          "score": 0.1111111111111111
+        },
+        {
+          "child_id": "jo-61-hang-4",
+          "parent_id": "jo-61",
+          "score": 0.1
+        },
+        {
+          "child_id": "jo-81-hang-5",
+          "parent_id": "jo-81",
+          "score": 0.09090909090909091
+        },
+        {
+          "child_id": "jo-14-hang-3",
+          "parent_id": "jo-14",
+          "score": 0.09090909090909091
+        },
+        {
+          "child_id": "jo-80-hang-5",
+          "parent_id": "jo-80",
+          "score": 0.08333333333333333
+        },
+        {
+          "child_id": "jo-52-hang-3",
+          "parent_id": "jo-52",
+          "score": 0.08333333333333333
+        },
+        {
+          "child_id": "jo-81-hang-4",
+          "parent_id": "jo-81",
+          "score": 0.07692307692307693
+        },
+        {
+          "child_id": "jo-40-hang-5",
+          "parent_id": "jo-40",
+          "score": 0.07142857142857142
+        },
+        {
+          "child_id": "jo-2-hang-3",
+          "parent_id": "jo-2",
+          "score": 0.07142857142857142
+        },
+        {
+          "child_id": "jo-82-hang-1",
+          "parent_id": "jo-82",
+          "score": 0.06666666666666667
+        }
+      ]
+    },
+    {
+      "id": "m03",
+      "question": "이사해야 하는 원격지 전근을 받았습니다. 발령은 언제 통지되고, 준용되는 부임 여비의 숙박비 한도는 얼마인가요?",
+      "gold_jo": [
+        "jo-19",
+        "jo-80"
+      ],
+      "hits": [
+        {
+          "child_id": "jo-19-hang-3",
+          "parent_id": "jo-19",
+          "score": 1.0
+        },
+        {
+          "child_id": "jo-22-hang-3",
+          "parent_id": "jo-22",
+          "score": 0.5833333333333333
+        },
+        {
+          "child_id": "jo-13-hang-3",
+          "parent_id": "jo-13",
+          "score": 0.47619047619047616
+        },
+        {
+          "child_id": "jo-80-hang-3",
+          "parent_id": "jo-80",
+          "score": 0.2909090909090909
+        },
+        {
+          "child_id": "jo-19-hang-4",
+          "parent_id": "jo-19",
+          "score": 0.25757575757575757
+        },
+        {
+          "child_id": "jo-80-hang-4",
+          "parent_id": "jo-80",
+          "score": 0.25
+        },
+        {
+          "child_id": "jo-7-hang-3",
+          "parent_id": "jo-7",
+          "score": 0.2
+        },
+        {
+          "child_id": "jo-19-hang-5",
+          "parent_id": "jo-19",
+          "score": 0.17261904761904762
+        },
+        {
+          "child_id": "jo-81-hang-3",
+          "parent_id": "jo-81",
+          "score": 0.16666666666666666
+        },
+        {
+          "child_id": "jo-2-hang-3",
+          "parent_id": "jo-2",
+          "score": 0.14285714285714285
+        },
+        {
+          "child_id": "jo-11-hang-3",
+          "parent_id": "jo-11",
+          "score": 0.125
+        },
+        {
+          "child_id": "jo-82-hang-4",
+          "parent_id": "jo-82",
+          "score": 0.1111111111111111
+        },
+        {
+          "child_id": "jo-14-hang-3",
+          "parent_id": "jo-14",
+          "score": 0.1111111111111111
+        },
+        {
+          "child_id": "jo-61-hang-4",
+          "parent_id": "jo-61",
+          "score": 0.1
+        },
+        {
+          "child_id": "jo-3-hang-3",
+          "parent_id": "jo-3",
+          "score": 0.1
+        },
+        {
+          "child_id": "jo-50-hang-2",
+          "parent_id": "jo-50",
+          "score": 0.08333333333333333
+        },
+        {
+          "child_id": "jo-75-hang-3",
+          "parent_id": "jo-75",
+          "score": 0.08333333333333333
+        },
+        {
+          "child_id": "jo-38-hang-4",
+          "parent_id": "jo-38",
+          "score": 0.07692307692307693
+        },
+        {
+          "child_id": "jo-15-hang-4",
+          "parent_id": "jo-15",
+          "score": 0.07692307692307693
+        },
+        {
+          "child_id": "jo-23-hang-2",
+          "parent_id": "jo-23",
+          "score": 0.07142857142857142
+        }
+      ]
+    },
+    {
+      "id": "m07",
+      "question": "재택근무는 누가 적용받을 수 있고, 외부에서 사내 시스템에 접속할 때 인증 방식과 접속 기록 보관 기준은 무엇인가요?",
+      "gold_jo": [
+        "jo-37",
+        "jo-85"
+      ],
+      "hits": [
+        {
+          "child_id": "jo-85-hang-3",
+          "parent_id": "jo-85",
+          "score": 1.0
+        },
+        {
+          "child_id": "jo-77-hang-3",
+          "parent_id": "jo-77",
+          "score": 0.4444444444444444
+        },
+        {
+          "child_id": "jo-85-hang-2",
+          "parent_id": "jo-85",
+          "score": 0.3333333333333333
+        },
+        {
+          "child_id": "jo-77-hang-2",
+          "parent_id": "jo-77",
+          "score": 0.25
+        },
+        {
+          "child_id": "jo-76-hang-3",
+          "parent_id": "jo-76",
+          "score": 0.25
+        },
+        {
+          "child_id": "jo-84-hang-4",
+          "parent_id": "jo-84",
+          "score": 0.24285714285714285
+        },
+        {
+          "child_id": "jo-32-hang-2",
+          "parent_id": "jo-32",
+          "score": 0.2
+        },
+        {
+          "child_id": "jo-3-hang-3",
+          "parent_id": "jo-3",
+          "score": 0.2
+        },
+        {
+          "child_id": "jo-1-hang-2",
+          "parent_id": "jo-1",
+          "score": 0.19642857142857142
+        },
+        {
+          "child_id": "jo-37-hang-3",
+          "parent_id": "jo-37",
+          "score": 0.16666666666666666
+        },
+        {
+          "child_id": "jo-4-hang-3",
+          "parent_id": "jo-4",
+          "score": 0.16666666666666666
+        },
+        {
+          "child_id": "jo-60-hang-3",
+          "parent_id": "jo-60",
+          "score": 0.14285714285714285
+        },
+        {
+          "child_id": "jo-5-hang-3",
+          "parent_id": "jo-5",
+          "score": 0.125
+        },
+        {
+          "child_id": "jo-2-hang-3",
+          "parent_id": "jo-2",
+          "score": 0.1111111111111111
+        },
+        {
+          "child_id": "jo-99-hang-2",
+          "parent_id": "jo-99",
+          "score": 0.1
+        },
+        {
+          "child_id": "jo-86-hang-2",
+          "parent_id": "jo-86",
+          "score": 0.09090909090909091
+        },
+        {
+          "child_id": "jo-14-hang-3",
+          "parent_id": "jo-14",
+          "score": 0.09090909090909091
+        },
+        {
+          "child_id": "jo-16-hang-2",
+          "parent_id": "jo-16",
+          "score": 0.08333333333333333
+        },
+        {
+          "child_id": "jo-10-hang-3",
+          "parent_id": "jo-10",
+          "score": 0.08333333333333333
+        },
+        {
+          "child_id": "jo-27-hang-2",
+          "parent_id": "jo-27",
+          "score": 0.07692307692307693
+        }
+      ]
+    },
+    {
+      "id": "m05",
+      "question": "고객 개인정보 처리를 외부 업체에 위탁하는 4천만원짜리 계약을 준비합니다. 계약서 보호 조치와 법무 검토 절차, 최종 계약 승인자는 어떻게 되나요?",
+      "gold_jo": [
+        "jo-86",
+        "jo-69",
+        "jo-13"
+      ],
+      "hits": [
+        {
+          "child_id": "jo-86-hang-3",
+          "parent_id": "jo-86",
+          "score": 1.0
+        },
+        {
+          "child_id": "jo-69-hang-3",
+          "parent_id": "jo-69",
+          "score": 0.39285714285714285
+        },
+        {
+          "child_id": "jo-69-hang-4",
+          "parent_id": "jo-69",
+          "score": 0.3333333333333333
+        },
+        {
+          "child_id": "jo-13-hang-3",
+          "parent_id": "jo-13",
+          "score": 0.3333333333333333
+        },
+        {
+          "child_id": "jo-2-hang-3",
+          "parent_id": "jo-2",
+          "score": 0.25
+        },
+        {
+          "child_id": "jo-86-hang-4",
+          "parent_id": "jo-86",
+          "score": 0.20535714285714285
+        },
+        {
+          "child_id": "jo-69-hang-1",
+          "parent_id": "jo-69",
+          "score": 0.2
+        },
+        {
+          "child_id": "jo-14-hang-3",
+          "parent_id": "jo-14",
+          "score": 0.2
+        },
+        {
+          "child_id": "jo-87-hang-3",
+          "parent_id": "jo-87",
+          "score": 0.18055555555555555
+        },
+        {
+          "child_id": "jo-86-hang-1",
+          "parent_id": "jo-86",
+          "score": 0.17692307692307693
+        },
+        {
+          "child_id": "jo-68-hang-3",
+          "parent_id": "jo-68",
+          "score": 0.16666666666666666
+        },
+        {
+          "child_id": "jo-3-hang-3",
+          "parent_id": "jo-3",
+          "score": 0.16666666666666666
+        },
+        {
+          "child_id": "jo-100-hang-3",
+          "parent_id": "jo-100",
+          "score": 0.1575757575757576
+        },
+        {
+          "child_id": "jo-68-hang-2",
+          "parent_id": "jo-68",
+          "score": 0.125
+        },
+        {
+          "child_id": "jo-69-hang-2",
+          "parent_id": "jo-69",
+          "score": 0.1111111111111111
+        },
+        {
+          "child_id": "jo-75-hang-3",
+          "parent_id": "jo-75",
+          "score": 0.1111111111111111
+        },
+        {
+          "child_id": "jo-97-hang-3",
+          "parent_id": "jo-97",
+          "score": 0.1
+        },
+        {
+          "child_id": "jo-95-hang-4",
+          "parent_id": "jo-95",
+          "score": 0.09090909090909091
+        },
+        {
+          "child_id": "jo-86-hang-6",
+          "parent_id": "jo-86",
+          "score": 0.08333333333333333
+        },
+        {
+          "child_id": "jo-1-hang-2",
+          "parent_id": "jo-1",
+          "score": 0.08333333333333333
+        }
+      ]
+    }
+  ]
+}

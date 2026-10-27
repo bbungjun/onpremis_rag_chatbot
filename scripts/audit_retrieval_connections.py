@@ -84,6 +84,7 @@ def main(argv=None) -> int:
     from app.chunking import chunk_text
     from app.config import Settings
     from app.embeddings import embed_text
+    from app.evidence_context import rank_sources
     from app.question_interpreter import interpret_question
     from app.rag_pipeline import _build_context, _expand_to_parents, _prompt_char_budget
     from app.sparse import text_to_sparse
@@ -139,6 +140,7 @@ def main(argv=None) -> int:
             p: _hash(ROOT / p)
             for p in [
                 "app/rag_pipeline.py",
+                "app/evidence_context.py",
                 "app/question_interpreter.py",
                 "app/vector_store.py",
                 "app/chunking.py",
@@ -160,6 +162,7 @@ def main(argv=None) -> int:
         "internal_directed_edges": sum(map(len, links.values())),
         "external_or_unresolved_references": external,
         "generation": "not called",
+        "context_policy": "reference-aware-v1",
         "judge": "not called",
     }
     _write(args.output / "run.json", metadata)
@@ -224,7 +227,7 @@ def main(argv=None) -> int:
                 text_to_sparse(interpreted.retrieval_question),
                 top_k * 4,
             )
-            expanded = _expand_to_parents(hits, top_k)
+            expanded = rank_sources(case["question"], _expand_to_parents(hits, len(hits)))[:top_k]
             context, prompt = _build_context(
                 interpreted, hits, top_k, max_prompt_chars=_prompt_char_budget(settings.num_ctx)
             )

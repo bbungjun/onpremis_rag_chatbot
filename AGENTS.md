@@ -68,6 +68,17 @@ Those questions describe the engineering project, not the chatbot product.
 8. Do not commit .env, cache directories, local DB files, or generated vector data.
 ```
 
+## Decision Log (required from 2026-10-27)
+
+Record every material engineering decision in Markdown as the work proceeds.
+Use `docs/decisions/README.md` as the index and
+`docs/decisions/<YYYY-MM-DD>-<topic>.md` for the chronological decision log.
+Record the observed problem, considered alternatives, chosen action and reason,
+verification/experiment reference, outcome, limitations, and next action.
+Append superseding decisions instead of erasing rejected approaches or failures.
+Do not put raw policy text, secrets, environment variables, or personal data in logs.
+Decision logs complement the design, implementation plan, and portfolio evidence below.
+
 ## Portfolio Evidence Documentation
 
 All implementation, experiment, evaluation, architecture, performance, and bug-fix work is

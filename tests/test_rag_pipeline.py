@@ -118,6 +118,28 @@ def test_answer_question_falls_back_without_qwen_when_search_returns_no_results(
     assert chat_calls == []
 
 
+def test_answer_question_does_not_call_generator_for_oversized_unsplittable_anchor(monkeypatch):
+    pipeline = rag_pipeline()
+    calls = []
+    monkeypatch.setattr(pipeline, "embed_text", lambda *args: [0.1, 0.2])
+    monkeypatch.setattr(pipeline, "text_to_sparse", lambda *args: {"indices": [], "values": []})
+    monkeypatch.setattr(
+        pipeline,
+        "search_chunks",
+        lambda *args, **kwargs: [
+            child_hit(
+                parent_text="신청은 가능하지만 "
+                + "조건을 확인한다. " * 1000
+                + "외주인력은 금지한다."
+            )
+        ],
+    )
+    monkeypatch.setattr(pipeline, "chat_qwen", lambda *args, **kwargs: calls.append(args))
+    result = pipeline.answer_question("외주인력이 신청 가능한가요?", 5, settings=make_settings())
+    assert result == {"answer": pipeline.FALLBACK_ANSWER, "sources": []}
+    assert calls == []
+
+
 def test_answer_question_falls_back_when_payload_has_no_usable_text(monkeypatch):
     pipeline = rag_pipeline()
     chat_calls = []

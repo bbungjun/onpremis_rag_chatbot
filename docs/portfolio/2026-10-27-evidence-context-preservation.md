@@ -148,6 +148,11 @@ python scripts/evaluate_evidence_context.py --output reports/retrieval-eval/cont
 - 재현 명령의 output은 기존 결과를 덮어쓰지 않도록 새 디렉터리명을 사용해야 한다.
 - 전체 로컬 테스트: **353 passed, 9 skipped**. EXAONE live opt-in 1건과 HWP CLI 미설치 8건 생략.
 - Ruff lint/format, diff whitespace 검사 통과. 자동 테스트 개수는 품질 정확도 지표가 아니다.
+- 게시 후 첫 CI에서는 새 평가 스크립트의 loopback IP 표기가 기존 추적 파일 엔드포인트
+  검사에 걸려 1 failed / 352 passed / 9 skipped였다. 동일 실패를 로컬에서 재현하고,
+  검사 기준은 유지한 채 도구가 실제 사용한 localhost 주소만 허용하도록 좁혔다.
+  실험 r2는 `9e35619` 스크립트로 실행됐으며 후속 변경은 주소 허용 조건 한 줄뿐이다.
+  run.json의 원래 코드 해시와 결과는 보존했다.
 - 필수 `docker compose up -d`, 컨테이너 pytest, 컨테이너 healthcheck는 이 worktree의
   `.env` 미존재로 exit 1이었다. `curl.exe --max-time 5 http://localhost:6333`은 exit 7.
   사용자 `.env`와 운영 인덱스를 수정하지 않았다. Compose 경로의 동작은 검증하지 못했다.

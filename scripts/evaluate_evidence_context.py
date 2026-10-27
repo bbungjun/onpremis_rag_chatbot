@@ -88,7 +88,7 @@ def main(argv=None):
     args = parser.parse_args(argv)
     if not args.output.resolve().is_relative_to(ROOT / "reports/retrieval-eval"):
         parser.error("output must be inside reports/retrieval-eval")
-    if args.ollama_url not in {"http://localhost:11434", "http://127.0.0.1:11434"}:
+    if args.ollama_url != "http://localhost:11434":
         parser.error("experiment only supports host loopback Ollama")
     args.output.mkdir(parents=True, exist_ok=False)
     files = {

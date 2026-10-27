@@ -154,6 +154,8 @@ python scripts/evaluate_evidence_context.py --output reports/retrieval-eval/cont
 
 ## 산출물과 해시
 
+- 구현 커밋: [9e35619](https://github.com/bbungjun/onpremis_rag_chatbot/commit/9e356190d54688b97280944daa4c727ea4d76ae8).
+- CI 실행: [GitHub Actions](https://github.com/bbungjun/onpremis_rag_chatbot/actions/runs/40507364182).
 - [설계](../superpowers/specs/2026-10-27-evidence-context-design.md),
   [구현 계획](../superpowers/plans/2026-10-27-evidence-context-implementation.md),
   [결정 기록](../decisions/2026-10-27-evidence-context.md),

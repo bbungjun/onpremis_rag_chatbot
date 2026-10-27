@@ -116,3 +116,16 @@
   새로운 고정 세트로 생성 품질의 회귀를 확인하는 것이다.
 - 실제 `answer_question` → 호스트 임베딩 → 고정 검색 callback → 실제 Qwen 경로도 1건
   확인했다. 평가 프롬프트와 출처 ID가 일치했으며, 이 검사는 서버 검색 또는 답변 정답률 검증이 아니다.
+
+## D09 — 검토와 게시
+
+- 17개 의도한 파일의 실제 diff를 검토하고 `git diff --check`를 통과한 뒤
+  `9e356190d54688b97280944daa4c727ea4d76ae8`로 commit/push했다.
+- 실행 manifest의 코드별 SHA-256이 게시하는 구현 파일과 같고, 고정 재현 입력의
+  child/parent ID가 일치함을 확인했다. 캐시·벡터·원본 응답·환경 파일은 커밋하지 않았다.
+- [PR #21](https://github.com/bbungjun/onpremis_rag_chatbot/pull/21)의 제목과 설명을
+  최종 구현·비교 결과·실패와 한계에 맞게 다시 작성했다. 대상은 main, 상태는 Draft다.
+- [코드 CI 실행](https://github.com/bbungjun/onpremis_rag_chatbot/actions/runs/40507364182)은
+  실행 식별자와 함께 연결한다. CI 통과 여부와 실제 생성 품질의 채택 판정은 별개의 기준이다.
+- 다음 작업부터도 `docs/decisions/README.md`에 주제를 추가하고 해당 주제 파일에서
+  관찰·대안·선택·검증·실패·최종 상태를 작업 중 이어서 기록한다.

@@ -143,3 +143,7 @@
   기존 run.json의 실행 코드 해시와 원본 결과는 다시 쓰지 않는다.
 - 앞으로 추적 파일 검사까지 포함한 전체 검증은 신규 파일을 선택적으로 stage한 후에도
   확인한다. 게시한 뒤 로컬 검증 결과만으로 CI 통과를 가정하지 않는다.
+- 최소 수정 후 stage된 상태에서 로컬 전체 **353 passed / 9 skipped**, Ruff 및 diff 검사를
+  다시 통과했다. 코드 커밋 `9db68b19e170be94a2ce78b5816c092415f7f5ee`의
+  [CI 40507804202](https://github.com/bbungjun/onpremis_rag_chatbot/actions/runs/40507804202)에서
+  lint와 test가 모두 SUCCESS임을 확인했다. 생성 품질 채택 보류와 서버 미검증 상태는 유지한다.
